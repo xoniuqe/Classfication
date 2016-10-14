@@ -2,7 +2,7 @@
 
 (in-package #:articlereader)
 
-
+;;;TODO: parse the generated textfiles, remove links, correct umlauts e.t.c.
 (defun fetch-article (html-page article-structure)
 	"Extracts the in the article-structure defined informations out of the parsed html document.
 	html-page	the parsed html page
