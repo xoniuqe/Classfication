@@ -34,10 +34,8 @@
      ; '((:H1 ((:ITEMPROP "headline")) :HEADLINE)
       ;  (:UL NIL :SHORTOVERVIEW)
        ; (:P NIL :TEXT)))
-(articlereader:parse-html *html-page*)
 
-
-
+;(articlereader:parse-html *html-page*)
 
 
 (articlereader:fetch-article *html-page* *sued-structure*)

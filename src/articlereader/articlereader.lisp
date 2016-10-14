@@ -19,11 +19,10 @@
 		(remove-unwanted-tags (chtml:parse regex-html (chtml:make-lhtml-builder)) '(:NOSCRIPT :FORM :SCRIPT :META :LINK :INPUT :IFRAME :IMG :HEAD) '(:ONCLICK :STYLE :BORDER :WIDTH :HEIGHT :ALIGN :DATA-POSITION :HREF :TARGET :VALUE :OPTION) ))
 )
 
+;scheint fürs erste zu reichen
 (defun html5-to-html4 (html-page)
-	(cl-ppcre:regex-replace-all "section" html-page "div")
-	;(repl-string html-page "<section" "<div")
-	;(print *html-page*)
-	;*html-page*
+	(setq html-page(cl-ppcre:regex-replace-all "<section" html-page "<div"))
+	(cl-ppcre:regex-replace-all "</section" html-page "</div")
 )
 
 
@@ -44,6 +43,8 @@
  ))))
 )
 
+
+;Sequence and parallel behaviour has still some issues, has to be fixed in future revision
 (defun read-structure (document structure)
 	(let* ((struct-type (first structure))
 		  (struct-pattern (rest structure)))
