@@ -29,13 +29,14 @@
 ;(:DIV ((:CLASS "header")) ("8. September 2016, 12:54 Uhr" (:H2 NIL ((:STRONG NIL ("Türkei")) "Türkei erlaubt Bundestagsabgeordneten Reise nach Incirlik"))))
 
 (setf *sued-structure*
-      '(:SEQUENCE (:DIV ((:CLASS "header")) (:SEQUENCE :DATE (:H2 NIL (:SEQUENCE :IGNORE :HEADLINE))))
-        (:DIV ((:CLASS "header")) (:PARALLEL (:DIV ((:CLASS "body") (:ID "article-body")) (:PARALLEL (:P NIL :TEXT)))))))
+      '(:SEQUENCE (:DIV ((:CLASS "header")) (:SEQUENCE (:DIV ((:DATE) (:CLASS "timeformat"))) (:H2 NIL (:SEQUENCE :IGNORE :HEADLINE))))
+        (:DIV ((:CLASS "body") (:ID "article-body")) (:PARALLEL (:P NIL :TEXT)))))
      ; '((:H1 ((:ITEMPROP "headline")) :HEADLINE)
       ;  (:UL NIL :SHORTOVERVIEW)
        ; (:P NIL :TEXT)))
 
 ;(articlereader:parse-html *html-page*)
+(cl-ppcre:regex-replace-all "<section" "<section>blabla </section>" "<div")
 
 
 (articlereader:fetch-article *html-page* *sued-structure*)
@@ -53,9 +54,14 @@
 (setf *spon-structure*
       '(:SEQUENCE (:SPAN ((:CLASS "headline-intro")) :HEADLINE-INTRO)
         (:SPAN ((:CLASS "headline")) :HEADLINE)
+        (:DIV ((:CLASS "timeformat") (:ITEMPROP "datePublished") (:DATETIME :IGNORE)) (:SEQUENCE (:SPAN ((:CLASS "article-function-date")) (:SEQUENCE :IGNORE :DATE :IGNORE)))) 
         (:P ((:CLASS "article-intro")) :ARTICLE-INTRO)
         (:DIV ((:CLASS "article-section clearfix")) (:PARALLEL (:P NIL :TEXT))))
 )
+
+;<time class="timeformat" itemprop="datePublished" datetime="2016-10-15 11:01:00">
+			;		Samstag, <b>15.10.2016 </b>&nbsp;
+			;		11:01 Uhr</time>
 
 (articlereader:parse-html *html-page*)
 (articlereader:fetch-article *html-page* *spon-structure*)
@@ -66,3 +72,11 @@
 (cl-ppcre:regex-replace-all "<section" *html-page* "<div")
 
 
+ (tree-equal '((:CLASS "test")(:BLA "bla")) '((:CLASS "test") (:IGNORE :IGNORE)) :test (lambda (elem1 elem2) (print (list elem1 elem2)) (or (equal elem1 elem2) (equal elem2 :IGNORE))))
+
+
+
+(setq test '(:DIV ((:CLASS "timeformat") (:ITEMPROP "datePublished") (:DATETIME "2016-09-07 15:55:00")) ((:SPAN ((:CLASS "article-function-date")) ("Mittwoch," (:B NIL ("07.09.2016")) " 
+					15:55 Uhr")))))
+
+(articlereader:read-structure test *spon-structure*)

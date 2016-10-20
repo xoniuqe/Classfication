@@ -22,7 +22,10 @@
 ;scheint fürs erste zu reichen
 (defun html5-to-html4 (html-page)
 	(setq html-page(cl-ppcre:regex-replace-all "<section" html-page "<div"))
-	(cl-ppcre:regex-replace-all "</section" html-page "</div")
+	(setq html-page (cl-ppcre:regex-replace-all "</section" html-page "</div"))
+	(setq html-page(cl-ppcre:regex-replace-all "<time" html-page "<div"))
+	(setq html-page (cl-ppcre:regex-replace-all "</time" html-page "</div"))
+	html-page
 )
 
 
