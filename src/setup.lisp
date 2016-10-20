@@ -29,7 +29,7 @@
 ;(:DIV ((:CLASS "header")) ("8. September 2016, 12:54 Uhr" (:H2 NIL ((:STRONG NIL ("Türkei")) "Türkei erlaubt Bundestagsabgeordneten Reise nach Incirlik"))))
 
 (setf *sued-structure*
-      '(:SEQUENCE (:DIV ((:CLASS "header")) (:SEQUENCE (:DIV ((:DATE) (:CLASS "timeformat"))) (:H2 NIL (:SEQUENCE :IGNORE :HEADLINE))))
+      '(:SEQUENCE (:DIV ((:CLASS "header")) (:SEQUENCE (:DIV ((:DATETIME :DATE) (:CLASS "timeformat"))) (:H2 NIL (:SEQUENCE :IGNORE :HEADLINE))))
         (:DIV ((:CLASS "body") (:ID "article-body")) (:PARALLEL (:P NIL :TEXT)))))
      ; '((:H1 ((:ITEMPROP "headline")) :HEADLINE)
       ;  (:UL NIL :SHORTOVERVIEW)
@@ -80,3 +80,10 @@
 					15:55 Uhr")))))
 
 (articlereader:read-structure test *spon-structure*)
+
+
+
+;(((:DATETIME "2016-09-09 12:21:35") (:CLASS "timeformat")) ((:DATETIME :DATE) (:CLASS "timeformat")))
+
+(find '(:DATETIME :DATE) '((:DATETIME "2016-09-09 12:21:35") (:CLASS "timeformat")) :test (lambda (elem1 elem2) (equal (first elem1) (first elem2))))
+

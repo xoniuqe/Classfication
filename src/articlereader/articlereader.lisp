@@ -9,25 +9,23 @@
 	article-structure	a list of list which describe the interesting article parts"
 	(setq *debug* NIL)
 ;;erweitern: article as symbol
-	(read-structure  (parse-html html-page)  article-structure)
-	;(setf cleaned-doc (remove-unwanted-tags *parsed-page* '(:NOSCRIPT :FORM :SCRIPT :META :LINK :INPUT :IFRAME :IMG :HEAD) '(:ONCLICK :STYLE :BORDER :WIDTH :HEIGHT :ALIGN :DATA-POSITION :HREF :TARGET :VALUE :OPTION)))
-)
+	(let ((article (read-structure  (parse-html html-page)  article-structure)))
+		;Artikel bereinigen: Umlaute korrigieren und eingebettete Elemente auf einfachen Text reduzieren
+		article))
 
+;Die Webseite lesen und Parsen
 (defun parse-html (html-page)
 	(let* (;(html-page (webengine++lisp-webfetcher 0 url :want-string T))	  
 		   (regex-html (html5-to-html4 html-page)))
-		(remove-unwanted-tags (chtml:parse regex-html (chtml:make-lhtml-builder)) '(:NOSCRIPT :FORM :SCRIPT :META :LINK :INPUT :IFRAME :IMG :HEAD) '(:ONCLICK :STYLE :BORDER :WIDTH :HEIGHT :ALIGN :DATA-POSITION :HREF :TARGET :VALUE :OPTION) ))
-)
+		(remove-unwanted-tags (chtml:parse regex-html (chtml:make-lhtml-builder)) '(:NOSCRIPT :FORM :SCRIPT :META :LINK :INPUT :IFRAME :IMG :HEAD) '(:ONCLICK :STYLE :BORDER :WIDTH :HEIGHT :ALIGN :DATA-POSITION :HREF :TARGET :VALUE :OPTION) )))
 
-;scheint fürs erste zu reichen
+;Ungültige html5 tags ersetzen, damit der HTML-Parser diese Tags nicht verwirft
 (defun html5-to-html4 (html-page)
 	(setq html-page(cl-ppcre:regex-replace-all "<section" html-page "<div"))
 	(setq html-page (cl-ppcre:regex-replace-all "</section" html-page "</div"))
 	(setq html-page(cl-ppcre:regex-replace-all "<time" html-page "<div"))
 	(setq html-page (cl-ppcre:regex-replace-all "</time" html-page "</div"))
-	html-page
-)
-
+	html-page)
 
 
 
@@ -42,12 +40,11 @@
      (setf cleaned-descriptor (remove-if (lambda (elem) (member (first elem) unwanted-descriptor)) descriptor))
     (cond ((member html-tag unwanted-tags) NIL)
           ((listp content) (list html-tag cleaned-descriptor (remove-if (lambda (elem) (< (length elem) 1))  (mapcar (lambda (elem) (remove-unwanted-tags elem unwanted-tags unwanted-descriptor)) content))))
-          (T content)
- ))))
-)
+         (T content))))))
 
 
 ;Sequence and parallel behaviour has still some issues, has to be fixed in future revision
+;Liest ein HTML Dokument mithilfe der angegebenen Struktur aus
 (defun read-structure (document structure)
 	(let* ((struct-type (first structure))
 		  (struct-pattern (rest structure)))
@@ -60,8 +57,8 @@
 			  (matches (mapcan (lambda (struct) (if (is-struct-placeholder struct) (list (list struct content)) (match-structure struct html-tag descriptor content))) struct-pattern))
 			 (retval (if (listp content)  (append matches (mapcan (lambda (elem) (read-structure elem structure)) content)) NIL)))
 			 retval
-		))))
-)
+		)))))
+
 
 (defun match-structure (structure-line html-tag descriptor content) ;maybe as macro ?
               (let* ((stag (first structure-line))
@@ -81,27 +78,20 @@
 			  														(T (print (list "should not happen" element))))) (rest scontent) content)
 																		)))
 					 ((and (equal html-tag stag) (compare-descriptor descriptor sdscrpt)) (list (list scontent content)))
-					  (T NIL)))
-                )
-)
+					  (T NIL)))))
 
 (defun compare-descriptor (desc-content desc-struct)
-	
 	(cond ((tree-equal desc-content desc-struct ) T)
 		  ((tree-equal desc-content desc-struct :test (lambda (elem1 elem2) (or (equal elem1 elem2) (is-struct-placeholder elem2)))) T);(equal elem2 :IGNORE)))) T)
-		  (T NIL)
-		)
-)
+		  (T NIL)))
 
+;;Wenn der descriptor einen Platzhalter enthält, muss der Wert ausgelesen werden
 (defun read-descriptor (desc-cont desc-struct)
-	;(print "read")
-	;(print (list desc-cont desc-struct))
 	(if (and desc-cont desc-struct (compare-descriptor desc-cont desc-struct))
 		(let ((tmp (mapcan (lambda (elem) (if (is-value-holder (second elem)) (list elem) NIL)) desc-struct)))
 			;(print tmp)
 			(if tmp  (mapcan (lambda (candidate) (list (list (second candidate) (second (find candidate desc-cont :test (lambda (elem1 elem2) (or (equal (first elem1) (first elem2)) (is-value-holder elem2)))))))) tmp)))
-	NIL)	
-)
+	NIL))
 
 (defun is-struct-placeholder (argument)
   (cond ((equal argument :IGNORE) T) 
