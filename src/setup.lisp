@@ -7,11 +7,19 @@
 (pushnew "../registry/" asdf:*central-registry* :test #'equal)
 
 
+;;General setup methods
 (defun load-articlereader ()
 (load (current-pathname "articlereader/articlereader" "asd"))
 (ql:quickload :articlereader ))
 
 (load-articlereader)
+
+
+(defun load-indexer ()
+(load (current-pathname "indexer/indexer" "asd"))
+(ql:quickload :indexer ))
+
+(load-indexer)
 
 
 ; needs drakma, loaded with myproject
@@ -31,24 +39,24 @@
 (setf *sued-structure*
       '(:SEQUENCE (:DIV ((:CLASS "header")) (:SEQUENCE (:DIV ((:DATETIME :DATE) (:CLASS "timeformat"))) (:H2 NIL (:SEQUENCE :IGNORE :HEADLINE))))
         (:DIV ((:CLASS "body") (:ID "article-body")) (:PARALLEL (:P NIL :TEXT)))))
-     ; '((:H1 ((:ITEMPROP "headline")) :HEADLINE)
-      ;  (:UL NIL :SHORTOVERVIEW)
-       ; (:P NIL :TEXT)))
+
+(setf *sued-link-structure* '((:A ((:DATA-PAGETYPE "THEME") (:CLASS "themelink")) (:SEQUENCE :TEXT))))
 
 ;(articlereader:parse-html *html-page*)
 (cl-ppcre:regex-replace-all "<section" "<section>blabla </section>" "<div")
 
 
-(articlereader:fetch-article *html-page* *sued-structure*)
+(setf article (articlereader:fetch-article *html-page* *sued-structure* *sued-link-structure*))
+
 
 ;Drakma needs openSSl 1.0.1, the version 1.1.0 removed to much functionality
 
 ;http://www.sueddeutsche.de/politik/bundesregierung-falsche-richtung-spd-1.3154952
 ;(setf *html-page* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik/bundesregierung-falsche-richtung-spd-1.3154952" :want-string T))
 ;
-(setf *html-page* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik/tuerkei-tuerkei-erlaubt-bundestagsabgeordneten-reise-nach-incirlik-1.3153593" :want-string T))
 
-;(setf *html-page* (webengine++lisp-webfetcher 0 "http://www.spiegel.de/wirtschaft/soziales/fluechtlinge-in-deutschland-sind-oft-ueberqualifiziert-a-1111237.html" :want-string T))
+
+(setf *html-page* (webengine++lisp-webfetcher 0 "http://www.spiegel.de/wirtschaft/soziales/fluechtlinge-in-deutschland-sind-oft-ueberqualifiziert-a-1111237.html" :want-string T))
 
 
 (setf *spon-structure*
@@ -64,7 +72,7 @@
 			;		11:01 Uhr</time>
 
 (articlereader:parse-html *html-page*)
-(articlereader:fetch-article *html-page* *spon-structure*)
+(articlereader:fetch-article *html-page* *spon-structure* '())
 
 
 (cl-ppcre:regex-replace-all "section" *html-page* "div")
