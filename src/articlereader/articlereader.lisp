@@ -3,7 +3,7 @@
 (in-package #:articlereader)
 
 ;;;TODO: parse the generated textfiles, remove links, correct umlauts e.t.c.
-(defun fetch-article (html-page article-structure)
+(defun fetch-article (html-page article-structure link-structure)
 	"Extracts the in the article-structure defined informations out of the parsed html document.
 	html-page	the parsed html page
 	article-structure	a list of list which describe the interesting article parts"
@@ -11,8 +11,11 @@
 ;;erweitern: article as symbol
 	(let ((article (read-structure  (parse-html html-page)  article-structure)))
 		;Artikel bereinigen: Umlaute korrigieren und eingebettete Elemente auf einfachen Text reduzieren
-		article))
+		(restructure-article article link-structure) ;replaces links with the embedded text of the link
+		;TODO: replace wrong encoded string parts
+		))
 
+		
 ;Die Webseite lesen und Parsen
 (defun parse-html (html-page)
 	(let* (;(html-page (webengine++lisp-webfetcher 0 url :want-string T))	  
@@ -92,6 +95,23 @@
 			;(print tmp)
 			(if tmp  (mapcan (lambda (candidate) (list (list (second candidate) (second (find candidate desc-cont :test (lambda (elem1 elem2) (or (equal (first elem1) (first elem2)) (is-value-holder elem2)))))))) tmp)))
 	NIL))
+	
+;;restructure: replaces the link structure with the content
+(defun restructure-article (article linkstructure)
+	 (mapcar (lambda (content) 
+		(let ((tag (first content))
+			  (cvalue (second content)))
+			  (cond ((stringp cvalue) content)
+				  ((listp cvalue) 
+					(let ((result (mapcar (lambda (elem) 
+						;assume that the second element is always a string and always the SINGLE information we need! 
+						;assume that the first match over all restructures is the only one and so the only thing that matters
+								(cond ((listp elem) (second (first (mapcan (lambda (struct) (list (first (match-structure struct (nth 0 elem) (nth 1 elem) (nth 2 elem))))) linkstructure))))
+									  (T elem))) cvalue))) (if (first result) result cvalue)))))
+			;  (let ((struct (first restruct))
+	) article))
+	
+
 
 (defun is-struct-placeholder (argument)
   (cond ((equal argument :IGNORE) T) 
