@@ -9,11 +9,23 @@
 	article-structure	a list of list which describe the interesting article parts"
 	(setq *debug* NIL)
 ;;erweitern: article as symbol
-	(let ((article (read-structure  (parse-html html-page)  article-structure)))
+	(let* ((article (read-structure  (parse-html html-page)  article-structure))
+		 (document (new-article)))
 		;Artikel bereinigen: Umlaute korrigieren und eingebettete Elemente auf einfachen Text reduzieren
-		(restructure-article article link-structure) ;replaces links with the embedded text of the link
+		(setf article (restructure-article article link-structure)) ;replaces links with the embedded text of the link
+		(print article)
+		(mapcar (lambda (content) (let ((tag (first content))
+										(value (first (rest content))))
+										(cond ((equal tag :HEADLINE) (setf (get document 'HEADLINE) value))
+											  ((equal tag :PLACE) (setf (get document 'PLACE) value))
+											  ((equal tag :DATE) (setf (get document 'DATE) value))
+											  ((equal tag :TEXT) (let* ((text (get document 'FULLTEXT)) (text2(concatenate 'string text (first value)))) (setf (get document 'FULLTEXT) text2)))))) 
+											  article)
+											  
+		;(setf (get document 'FULLTEXT) (repair-encoding (get document 'FULLTEXT)))
 		;TODO: replace wrong encoded string parts
-		))
+		;TODO: set string into a single field, and generate an article symbol
+		document))	
 
 		
 ;Die Webseite lesen und Parsen
@@ -29,7 +41,6 @@
 	(setq html-page(cl-ppcre:regex-replace-all "<time" html-page "<div"))
 	(setq html-page (cl-ppcre:regex-replace-all "</time" html-page "</div"))
 	html-page)
-
 
 
 
@@ -107,7 +118,7 @@
 						;assume that the second element is always a string and always the SINGLE information we need! 
 						;assume that the first match over all restructures is the only one and so the only thing that matters
 								(cond ((listp elem) (second (first (mapcan (lambda (struct) (list (first (match-structure struct (nth 0 elem) (nth 1 elem) (nth 2 elem))))) linkstructure))))
-									  (T elem))) cvalue))) (if (first result) result cvalue)))))
+									  (T elem))) cvalue))) (list tag (if (first result) result cvalue))))))
 			;  (let ((struct (first restruct))
 	) article))
 	
