@@ -4,9 +4,7 @@
   :description "Describe document indexer here"
   :author "Tobias Arens "
   :license "Specify license here"
-  ;:depends-on (#:drakma
-       ;        #:cl-ppcre
-		;	   #:closure-html)
+  :depends-on (#:cl-ppcre)
              
   :serial t
   :components ((:file "package")

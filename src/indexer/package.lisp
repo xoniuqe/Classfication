@@ -2,7 +2,7 @@
 
 (defpackage #:indexer
   (:use #:cl)
-  ;(:export )
+  (:export :make-index)
  )
 
   
