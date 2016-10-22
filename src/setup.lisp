@@ -19,7 +19,6 @@
 (load (current-pathname "indexer/indexer" "asd"))
 (ql:quickload :indexer ))
 
-(load-indexer)
 
 
 ; needs drakma, loaded with myproject
@@ -95,3 +94,12 @@
 
 (find '(:DATETIME :DATE) '((:DATETIME "2016-09-09 12:21:35") (:CLASS "timeformat")) :test (lambda (elem1 elem2) (equal (first elem1) (first elem2))))
 
+
+
+;Indexer testing
+(load-indexer)
+
+
+(indexer:make-index "hallo welt wie geht es dir so? mir geht es super gut!")
+
+(symbol-plist (indexer:make-index "hallo welt wie geht es dir so? mir geht es super gut!") )
