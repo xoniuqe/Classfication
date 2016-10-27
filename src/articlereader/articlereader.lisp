@@ -22,11 +22,12 @@
 											  ((equal tag :TEXT) (let* ((text (get document 'FULLTEXT)) (text2(concatenate 'string text (first value)))) (setf (get document 'FULLTEXT) text2)))))) 
 											  article)
 											  
-		;(setf (get document 'FULLTEXT) (repair-encoding (get document 'FULLTEXT)))
-		;TODO: replace wrong encoded string parts
+		(setf (get document 'FULLTEXT) (remove-punctuation (get document 'FULLTEXT)))
 		;TODO: set string into a single field, and generate an article symbol
 		document))	
 
+(defun remove-punctuation (text)
+	(cl-ppcre:regex-replace-all "[.,!?"]" text ""))
 		
 ;Die Webseite lesen und Parsen
 (defun parse-html (html-page)
