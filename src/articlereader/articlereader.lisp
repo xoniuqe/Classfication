@@ -27,7 +27,7 @@
 		document))	
 
 (defun remove-punctuation (text)
-	(cl-ppcre:regex-replace-all "[.,!?"]" text ""))
+	(cl-ppcre:regex-replace-all "[.,!?"]" text " "))
 		
 ;Die Webseite lesen und Parsen
 (defun parse-html (html-page)
