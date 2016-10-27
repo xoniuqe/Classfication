@@ -41,12 +41,20 @@
 
 (setf *sued-link-structure* '((:A ((:DATA-PAGETYPE "THEME") (:CLASS "themelink")) (:SEQUENCE :TEXT))))
 
-;(articlereader:parse-html *html-page*)
-(cl-ppcre:regex-replace-all "<section" "<section>blabla </section>" "<div")
 
 
 (setf article (articlereader:fetch-article *html-page* *sued-structure* *sued-link-structure*))
+(load-indexer)
 
+
+(setf index (indexer:make-index article))
+
+(symbol-plist index)
+(setf sortlist (copy-list (symbol-plist index)))
+(setf word-list (cadddr sortlist))
+(assoc "die" word-list :test (lambda (w1 w2)  (print (and (listp w1) (listp w2) (string-equal (first w1) (first w2))))))
+
+(cdddr sortlist)
 
 ;Drakma needs openSSl 1.0.1, the version 1.1.0 removed to much functionality
 
