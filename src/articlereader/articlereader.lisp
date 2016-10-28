@@ -18,16 +18,18 @@
 										(value (first (rest content))))
 										(cond ((equal tag :HEADLINE) (setf (get document 'HEADLINE) value))
 											  ((equal tag :PLACE) (setf (get document 'PLACE) value))
+											  ((equal tag :HEADLINE-INTRO) (setf (get document 'INTRO) value))
 											  ((equal tag :DATE) (setf (get document 'DATE) value))
-											  ((equal tag :TEXT) (let* ((text (get document 'FULLTEXT)) (text2(concatenate 'string text (first value)))) (setf (get document 'FULLTEXT) text2)))))) 
+											  ((equal tag :TEXT) (let* ((text (get document 'FULLTEXT)) (text2 "")) (mapcar (lambda (val) (setf text2 (concatenate 'string text val))) (remove nil value))  (setf (get document 'FULLTEXT) text2)))
+											  (T (progn (print (list "not found: " value)) NIL))))) 
 											  article)
 											  
-		(setf (get document 'FULLTEXT) (remove-punctuation (get document 'FULLTEXT)))
+		;(setf (get document 'FULLTEXT) (remove-punctuation (get document 'FULLTEXT)))
 		;TODO: set string into a single field, and generate an article symbol
 		document))	
 
 (defun remove-punctuation (text)
-	(cl-ppcre:regex-replace-all "[.,!?"]" text " "))
+	(cl-ppcre:regex-replace-all "[.,!?\"]" text " "))
 		
 ;Die Webseite lesen und Parsen
 (defun parse-html (html-page)
@@ -63,8 +65,9 @@
 (defun read-structure (document structure)
 	(let* ((struct-type (first structure))
 		  (struct-pattern (rest structure)))
+		; (if (equal struct-type :PARALLEL)  (print `(,struct-pattern ,(if (listp document) (nth 2 document) document))))
 	(cond ((not (listp document)) NIL)
-	 (T
+	 (T ;(equal struct-pattern :SEQUENCE)
 	  (let* ((html-tag 	 (nth 0 document))
 			 (descriptor (nth 1 document))
 			 (content 	 (nth 2 document))
@@ -84,10 +87,17 @@
 					;;Wenn die strutucte einen untercontent enthält und der content eine liste ist, wird dieser parallel verglichen
 					;;eventuell muss ein tag wie :SEQUENCE oder :PARALLEL eingeführt werden um anzugeben wie eine substruktur gebraucht wird, muss aber erst getestet werden
 					(if (equal (first scontent) :PARALLEL)
-					(let ((rek (if (listp content) (mapcan (lambda (subcont) (read-structure subcont scontent)) content) NIL))
-						 )
-						(if (not rek) (read-structure content scontent) rek)
-					) (if (equal (length content) (-(length scontent) 1))(mapcan (lambda (element subcontent) (cond ((listp element)  (read-structure subcontent (list :SEQUENCE element)))
+					;(let ((rek (if (listp content) (mapcan (lambda (subcont) (read-structure subcont scontent)) content) NIL))
+					;	 )
+						; (print scontent)
+						; (print content)
+						;(if (not rek) (read-structure content scontent) rek)
+						;(read-structure content scontent)
+						(mapcan (lambda (struct) (mapcan (lambda (subcont) 
+								(match-structure struct (nth 0 subcont) (nth 1 subcont) (nth 2 subcont))
+							) content) ) (rest scontent))
+					;) 
+					(if (and (equal (first scontent) :SEQUENCE) (equal (length content) (-(length scontent) 1)))(mapcan (lambda (element subcontent) (cond ((listp element)  (read-structure subcontent (list :SEQUENCE element)))
 																		((equal element :IGNORE) NIL)
 																		((is-struct-placeholder element)  (list (list element subcontent)))
 			  														(T (print (list "should not happen" element))))) (rest scontent) content)
