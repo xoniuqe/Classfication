@@ -79,6 +79,8 @@
 			;		11:01 Uhr</time>
 
 (articlereader:parse-html *html-page*)
+
+(load-articlereader)
 (articlereader:fetch-article *html-page* *spon-structure* '())
 
 
