@@ -24,12 +24,12 @@
 											  (T (progn (print (list "not found: " value)) NIL))))) 
 											  article)
 											  
-		;(setf (get document 'FULLTEXT) (remove-punctuation (get document 'FULLTEXT)))
+		(setf (get document 'FULLTEXT) (remove-punctuation (get document 'FULLTEXT)))
 		;TODO: set string into a single field, and generate an article symbol
 		document))	
 
 (defun remove-punctuation (text)
-	(cl-ppcre:regex-replace-all "[.,!?\"]" text " "))
+	(cl-ppcre:regex-replace-all "[.,!?\\\"]" text " "))
 		
 ;Die Webseite lesen und Parsen
 (defun parse-html (html-page)

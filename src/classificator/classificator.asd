@@ -4,11 +4,9 @@
   :description "Describe document classificator here"
   :author "Tobias Arens "
   :license "Specify license here"
-  ;:depends-on (#:drakma
-       ;        #:cl-ppcre
-		;	   #:closure-html)
+  :depends-on (#:indexer)
              
   :serial t
   :components ((:file "package")
-               (:file "indexer")))
+               (:file "classificator")))
 

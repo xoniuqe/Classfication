@@ -6,32 +6,48 @@
 (load #P"~/quicklisp/setup.lisp")
 (pushnew "../registry/" asdf:*central-registry* :test #'equal)
 
+(defun load-util ()
+  (load (current-pathname "util/util" "asd"))
+  (ql:quickload :util ))
 
 ;;General setup methods
 (defun load-articlereader ()
-(load (current-pathname "articlereader/articlereader" "asd"))
-(ql:quickload :articlereader ))
-
-(load-articlereader)
+  (load (current-pathname "articlereader/articlereader" "asd"))
+  (ql:quickload :articlereader ))
 
 
 (defun load-indexer ()
-(load (current-pathname "indexer/indexer" "asd"))
-(ql:quickload :indexer ))
+  (load (current-pathname "indexer/indexer" "asd"))
+  (ql:quickload :indexer ))
 
+(defun load-classificator ()
+  (load (current-pathname "classificator/classificator" "asd"))
+  (ql:quickload :classificator))
 
+;general setup
+(defun setup (&key install-quicklisp)
+   ;Wenn quicklisp nicht installiert
+   ;(if install-quicklisp (progn (load (merge-pathnames "quicklisp" (current-pathname)))
+    ;                       (ignore-errors(quicklisp-quickstart:install))))
+  (load #P"~/quicklisp/setup.lisp")
+  (pushnew "../registry/" asdf:*central-registry* :test #'equal)
+
+  (load-util)
+  (load-articlereader)
+  (load (current-pathname "website-crawler/new_iis_start_small"))
+  (load-indexer)
+  (load-classificator))
+
+(setup)
 
 ; needs drakma, loaded with myproject
+;Drakma needs openSSl 1.0.1, the version 1.1.0 removed to much functionality
 (load (current-pathname "website-crawler/new_iis_start_small"))
 
-;;HTML parser
-(ql:quickload :cxml)
-(ql:quickload :closure-html)
 
-(ql:quickload :cl-html-parse)
 (setf *html-page* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik/bundesregierung-falsche-richtung-spd-1.3154952" :want-string T))
 
-(setf *html-page* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik/tuerkei-tuerkei-erlaubt-bundestagsabgeordneten-reise-nach-incirlik-1.3153593" :want-string T))
+(setf *html-page2* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik/tuerkei-tuerkei-erlaubt-bundestagsabgeordneten-reise-nach-incirlik-1.3153593" :want-string T))
 
 ;(:DIV ((:CLASS "header")) ("8. September 2016, 12:54 Uhr" (:H2 NIL ((:STRONG NIL ("Türkei")) "Türkei erlaubt Bundestagsabgeordneten Reise nach Incirlik"))))
 
@@ -44,24 +60,49 @@
 
 
 (setf article (articlereader:fetch-article *html-page* *sued-structure* *sued-link-structure*))
-(load-indexer)
+
+
+(setf article2 (articlereader:fetch-article *html-page2* *sued-structure* *sued-link-structure*))
 
 
 (setf index (indexer:make-index article))
+
+(setf index2 (indexer:make-index article2))
+
 
 (symbol-plist index)
 (setf sortlist (copy-list (symbol-plist index)))
 (setf word-list (cadddr sortlist))
 (assoc "die" word-list :test (lambda (w1 w2)  (print (and (listp w1) (listp w2) (string-equal (first w1) (first w2))))))
 
-(cdddr sortlist)
+(setq wordlist (cadr (cddddr sortlist)))
 
-;Drakma needs openSSl 1.0.1, the version 1.1.0 removed to much functionality
+(indexer:append-wordlist index wordlist)
 
-;http://www.sueddeutsche.de/politik/bundesregierung-falsche-richtung-spd-1.3154952
-;(setf *html-page* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik/bundesregierung-falsche-richtung-spd-1.3154952" :want-string T))
-;
+; (remove-if (lambda (w) (or (> (nth 3 w) 1.5) (< (nth 3 w) 0.7))) wordlist)
 
+(load-classificator)
+
+(classificator:setup)
+(setq testClass (classificator:new-document-class "test"))
+(setq testClass2 (classificator:new-document-class "test2"))
+
+;Classificator tests
+(classificator:add-document testClass index)
+
+(classificator:add-document testClass2 index2)
+
+(classificator:calculate-class-metrics testClass)
+(classificator:calculate-class-metrics testClass2)
+
+(classificator:multinominial-naive-bayes index)
+
+(classificator:calculate-complementary-frequency testClass)
+ 
+(classificator:get-complement-class testClass2)
+(classificator:get-classes-without "12")
+
+;(remove-if (lambda (class) (string-equal (first-class name))) (get 'DOC-CORPUS-6947 'CLASSIFICATOR:CLASSES))
 
 (setf *html-page* (webengine++lisp-webfetcher 0 "http://www.spiegel.de/wirtschaft/soziales/fluechtlinge-in-deutschland-sind-oft-ueberqualifiziert-a-1111237.html" :want-string T))
 
@@ -83,33 +124,3 @@
 (load-articlereader)
 (articlereader:fetch-article *html-page* *spon-structure* '())
 
-
-(cl-ppcre:regex-replace-all "section" *html-page* "div")
-
-(cl-ppcre:regex-replace-all "<section" *html-page* "<div")
-
-
- (tree-equal '((:CLASS "test")(:BLA "bla")) '((:CLASS "test") (:IGNORE :IGNORE)) :test (lambda (elem1 elem2) (print (list elem1 elem2)) (or (equal elem1 elem2) (equal elem2 :IGNORE))))
-
-
-
-(setq test '(:DIV ((:CLASS "timeformat") (:ITEMPROP "datePublished") (:DATETIME "2016-09-07 15:55:00")) ((:SPAN ((:CLASS "article-function-date")) ("Mittwoch," (:B NIL ("07.09.2016")) " 
-					15:55 Uhr")))))
-
-(articlereader:read-structure test *spon-structure*)
-
-
-
-;(((:DATETIME "2016-09-09 12:21:35") (:CLASS "timeformat")) ((:DATETIME :DATE) (:CLASS "timeformat")))
-
-(find '(:DATETIME :DATE) '((:DATETIME "2016-09-09 12:21:35") (:CLASS "timeformat")) :test (lambda (elem1 elem2) (equal (first elem1) (first elem2))))
-
-
-
-;Indexer testing
-(load-indexer)
-
-
-(indexer:make-index "hallo welt wie geht es dir so? mir geht es super gut!")
-
-(symbol-plist (indexer:make-index "hallo welt wie geht es dir so? mir geht es super gut!") )
