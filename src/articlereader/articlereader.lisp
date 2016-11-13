@@ -21,6 +21,7 @@
 											  ((equal tag :HEADLINE-INTRO) (setf (get document 'INTRO) value))
 											  ((equal tag :DATE) (setf (get document 'DATE) value))
 											  ((equal tag :TEXT) (let* ((text (get document 'FULLTEXT)) (text2 "")) (mapcar (lambda (val) (setf text2 (concatenate 'string text val))) (remove nil value))  (setf (get document 'FULLTEXT) text2)))
+											  ((equal tag :TEASER) (setf (get document 'TEASERS) (append (get document 'TEASERS) (list :TEASER value)	)))
 											  (T (progn (print (list "not found: " value)) NIL))))) 
 											  article)
 											  
@@ -30,15 +31,17 @@
 
 (defun remove-punctuation (text)
 	(cl-ppcre:regex-replace-all "[.,!?\\\"]" text " "))
+	;(cl-ppcre:regex-replace-all "[^a-bA-B0-9]" text " "))
 		
 ;Die Webseite lesen und Parsen
 (defun parse-html (html-page)
 	(let* (;(html-page (webengine++lisp-webfetcher 0 url :want-string T))	  
 		   (regex-html (html5-to-html4 html-page)))
-		(remove-unwanted-tags (chtml:parse regex-html (chtml:make-lhtml-builder)) '(:NOSCRIPT :FORM :SCRIPT :META :LINK :INPUT :IFRAME :IMG :HEAD) '(:ONCLICK :STYLE :BORDER :WIDTH :HEIGHT :ALIGN :DATA-POSITION :HREF :TARGET :VALUE :OPTION) )))
+		(remove-unwanted-tags (chtml:parse regex-html (chtml:make-lhtml-builder)) '(:NOSCRIPT :FORM :SCRIPT :META :INPUT :IFRAME :IMG :HEAD) '(:ONCLICK :STYLE :BORDER :WIDTH :HEIGHT :ALIGN :DATA-POSITION :HREF :TARGET :VALUE :OPTION) )))
 
 ;Ungültige html5 tags ersetzen, damit der HTML-Parser diese Tags nicht verwirft
 (defun html5-to-html4 (html-page)
+	(setq html-page(cl-ppcre:regex-replace-all "href" html-page "id")) ;links klappen sonst nicht :/
 	(setq html-page(cl-ppcre:regex-replace-all "<section" html-page "<div"))
 	(setq html-page (cl-ppcre:regex-replace-all "</section" html-page "</div"))
 	(setq html-page(cl-ppcre:regex-replace-all "<time" html-page "<div"))
@@ -79,7 +82,7 @@
 
 
 (defun match-structure (structure-line html-tag descriptor content) ;maybe as macro ?
-              (let* ((stag (first structure-line))
+			  (let* ((stag (first structure-line))
                      (sdscrpt (second structure-line))
                      (scontent (nth 2 structure-line))
 					 (descriptormatch (read-descriptor descriptor sdscrpt)))
@@ -146,6 +149,9 @@
         ((equal argument :PLACE) T)
         ((equal argument :HEADLINE) T)
 		((equal argument :TEXT) T)
+		((equal argument :TEASER) T)
+		((equal argument :TEASER-TITLE) T)
+		((equal argument :TEASER-LINK) T)
         (T NIL)))
 
 (defun new-article ()
