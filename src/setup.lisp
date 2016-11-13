@@ -130,11 +130,11 @@
 (articlereader:fetch-article *html-page* *spon-structure* '())
 
 
-(setf *sueddeutsche-politik* (webengine++lisp-webfetcher 0 "http://www.spiegel.de/politik/deutschland/" :want-string T))
+(setf *sueddeutsche-politik* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik" :want-string T))
 
 (setf *sueddeutsche-category-structure*
-      '(:SEQUENCE (:DIV ((:ID "wrapper"))  
-                        (:PARALLEL (:DIV ((:ID "sitecontent")(:CLASS "mainpage")(:ROLE "main")) (:PARALLEL (:DIV ((:CLASS "teaser toptop")) :TEASER)))))))
+      '(:SEQUENCE (:DIV ((:ID "wrapper"))
+                        (:PARALLEL (:DIV ((:ID "sitecontent")(:CLASS "mainpage")(:ROLE "main")) (:PARALLEL (:DIV ((:CLASS "teaser toptop")) :TEASER) (:DIV ((:CLASS "teaser top")) :TEASER)))))))
                  ; (:DIV ((:CLASS "column-both main-content")) 
                   ;      (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))
                    ;                (:DIV ((:CLASS "teaser")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))))))
