@@ -2,141 +2,70 @@
 
 (in-package #:classificator)
 
+;TODO kommentieren und nochmal auf die effizienz achten!
+
 ;;; mappes all categories/classes to their names
 (defvar *corpus*)
 
-; learns to connect the list of documents to a certain class
-(defun learn-class (indexed-documents className)
-	;TODO calculate tf-idf metric
-	;apply vector space model / naive bayes
-	(let ((classId (new-document-class className)))
-		(map 'nil (lambda (document-index) (add-document classId document-index)) indexed-documents)
-		;(calculate-class-metrics classId)
-		classId))
+;erst mal nur eine klasse pro dokument zurückgeben
+(defun classify-document (document)
+ ;(mapcar (lambda (class) (list class (document-value document (second class)))) (get-classes)))
+	(sort (mapcar (lambda (class) (list class (document-value document (second class)))) (get-classes)) #'< :key 'second))
 
+(defun document-value (document classId)
+	(apply '+ (mapcar (lambda (x) (let ((r (find (first x) (get classId 'WEIGHTS) :key 'first :test 'string-equal))) (if r (nth 2 r) 0.0))) (get document 'INDEXER:WORD-LIST))))
+	
 
+;(apply '+ (mapcar (lambda (x) (let ((r (find (first x) test :key 'first :test 'string-equal))) (if r (nth 2 r) 0))) (get testClass 'INDEXER:WORD-LIST)))
+;alle gewichte für alle klassen (neu-) berechnen
+(defun calculate-corpus-metrics () 
+	(mapcar (lambda (class) (calculate-weights (second class))) (get-classes)))
 
 (defun setup () 
 	(setq *corpus* (new-document-corpus)))
-; when the algorithm collected enough data we can try to get the classes of a certain document even if it is a new one
-(defun get-classes (indexed-document))
 
-;https://en.wikipedia.org/wiki/Naive_Bayes_classifier
-;https://en.wikipedia.org/wiki/Tf%E2%80%93idf
-
-;returns document classes
-(defun multinominial-naive-bayes (document)
-	;termfrequency steht in document drin
-    ;inverse steht in doc-class, wobei dieses maß über ALLE dokumente errechnet werden müsste?
+(defun tf-idf (document word );(&key (ignore nil)))
+	(* (term-frequency document word) (inverse-document-frequency word)));ignore)))
 	
-	(let* ((word-list (get document 'INDEXER:WORD-LIST))
-		   (counted-words (mapcar (lambda (word) (inverse-document-frequency (first word)))word-list)))
-		;TODO weiter machen, ich glaube die indexierung aus dem indexer ist so nicht direkt nötig
-	)
-	;siehe wiki englisch über tf-idf example!
-	;tfidf berechnen: tf(t,d) * idf(t, D)
-)
-
-(defun normalized-term-frequency (term document)
-	(let ((tf (nth 2 (find term (get document 'INDEXER:WORD-LIST) :test (lambda (l w) (string-equal w (first l)))))); wie oft ist term in document
-		  (nd (get document 'INDEXER:LENGTH)))
-		(/ tf nd))) ;https://arxiv.org/pdf/1410.5329.pdf
-
-
-;https://www.reddit.com/r/MachineLearning/comments/1inxnq/how_to_factor_in_tfidf_with_naive_bayes/
-;diese funktion ist so vermutlich nicht ganz korrekt, da diese metrik über das gesamte korpus gehen muss
-;später: calculate corpus metrics, läuft über alle klassen und ermöglicht die kategorisierung
-(defun calculate-class-metrics (classId) ;verbesere mit: calculate metrics (anfrage) -> über alle dokumente
-	(let ((word-list (get classId 'INDEXER:WORD-LIST))
-		  (N (get classId 'N)))
-		  ;;diese metrik muss über alle trainings dokumente angepasst werden
-		;(mapcar (lambda (word) (append word `(:IDF ,(calculate-inverse-frequency (count-word-frequency classId (first word)) N)))) word-list)) 
-		(setf word-list (mapcar (lambda (word) 
-			(let* ((tf (term-frequency classId (first word)))
-				  (idf (inverse-document-frequency (first word)))
-				  (tf-idf (* tf idf))
-				  (pos (position :TF-IDF word)))
-			(if pos (setf (nth (+ 1 pos) word) tf-idf)
-				(setf word (append word `(:TF-IDF ,tf-idf)))))
-			word
-			) word-list))
-		(setf (get classId 'INDEXER:WORD-LIST) word-list)
-		(setf (get classId 'INDEXER:WORD-LIST) (mapcar (lambda (word) 
-			(let ((pos (position :NORM word))
-			      (norm (length-normalization word classId)))
-				(if pos (setf (nth (+ 1 pos) word) norm)
-					(setf word (append word `(:NORM ,norm))))
-				word)
-			) word-list)))
-		;(print (get classId 'INDEXER:WORD-LIST))
-		;(mapcar (lambda (word) (calculate-complementary-frequency classId word)) (get classId 'INDEXER:WORD-LIST))
-		;(calculate-complementary-frequency classId)
-		classId)
-	
-;(defun calculate-inverse-frequency (wordf N) ;inverse document frequency smooth
-;	(log (+ 1 (/ N wordf))))
-
-(defun tf-idf (classId word );(&key (ignore nil)))
-	(* (term-frequency classId word) (inverse-document-frequency word)));ignore)))
-	
-(defun term-frequency (classId word) ;wie oft kommt das wort in der klasse vor?
-	(let ((wcount (second (assoc word (get classId 'INDEXER:WORD-LIST)))))
+(defun term-frequency (document word) ;wie oft kommt das wort in der klasse vor?
+	(let ((wcount (second (assoc word (get document 'INDEXER:WORD-LIST) :test 'string-equal))))
 	;(+ 0.5 (* 0.5 (/ wcount (get-max-wcount-of-class classId))))))
 	(if (not wcount) (setf wcount 0))
 	(log (+ 1 wcount))))
 
-(defun get-max-wcount-of-class (classId); gibt die größe des am meisten gezählte wort zurück
-	(let ((word-list (get classId 'INDEXER:WORD-LIST)))
-		 (reduce 'max word-list :key (lambda (w) (second w)) )))
 
 (defun inverse-document-frequency (word );(&key (ignore nil))) ;inverse häufigkeit des wortes in allen klassen, damit werden beispielsweise artikel relativ unbedeutend
-	;(print word)
-	(let ((word-frequency (apply '+ (mapcar (lambda (class) (count-word-frequency (second class) word)) (get-classes))))
-		  (num-class (get *corpus* 'NUM-CLASS)))
-		  ;(if ignore (setf num-class (- num-class 1)))
-		 (log (+ 1 (/ num-class word-frequency)))))
+	(let ((word-frequency (apply '+ (mapcar (lambda (document) (count-word-frequency document word)) (get-documents))))
+		  (num-docs (get-num-docs)))
+		 (log (+ 1 (/ num-docs word-frequency)))))
 
 	
-(defun count-word-frequency (classId word) ;in wie vielen dokumenten ist dieses wort vorhanden? (per klasse)
-	(apply '+ 
-		(mapcar (lambda (document) 
-			(if (member word (get document 'INDEXER:WORD-LIST) :key 'first :test 'string-equal) 1 0)) 
-		(get classId 'DOCUMENTS))))
+(defun count-word-frequency (document word) ;in wie vielen dokumenten ist dieses wort vorhanden? (per klasse)
+	(if (member word (get document 'INDEXER:WORD-LIST) :key 'first :test 'string-equal) 1 0)) 
 
-(defun length-normalization (word classId) ;normalisiert die bewertung
-	(let* ((word-list (get classId 'INDEXER:WORD-LIST))
-		   (dword (nth 3 (find word word-list :test (lambda (f w) (string-equal (first f) (first w))))))
-		   (wpos (position word word-list)))
-		   (if (not dword) (setf dword 0))
-		   (/ dword (sqrt (apply '+ (mapcar (lambda (w) (expt (nth 3 w) 2)) word-list))))))
+(defun normalize (tfidf)
+;lambda ausdruck auslagern, damit die berechnung nicht so ineffizient ist
+	(/ tfidf (sqrt (apply '+ (mapcan (lambda (document) (mapcar (lambda (w) (expt (tf-idf document (first w)) 2)) (get document 'INDEXER:WORD-LIST))) (get-documents))))))		   
 
-(defun normalize (tfidf classId)
-	(/ tfidf (sqrt (apply '+ (mapcar (lambda (w) (expt (tf-idf classId (first w)) 2)) (get classId 'INDEXER:WORD-LIST))))))		   
-		  
-(defun calculate-complementary-frequency (classId) ;berechnet das komplement der häufigkeit
+(defun normalize-weights (weights) 
+	;sum-of-weights auslagern für effizienz
+	(let ((sum-of-weights (apply '+ (mapcar (lambda (w) (abs (nth 1 w))) weights))))
+		(setf weights (mapcar (lambda (w) (append w `(,(/ (nth 1 w) sum-of-weights)))) weights))))
+
+
+(defun calculate-weights (classId)
 	(let* ((complement (get-complement-class classId))
-		   (a (count-vocabulary :ignore classId))
-		   (oben (mapcar (lambda (word) (+ (normalize (tf-idf complement (first word)) complement ) 1)) (get classId 'INDEXER:WORD-LIST)))
-		   (unten (mapcar (lambda (word) (+ (normalize (tf-idf complement (first word)) complement) a)) (get complement 'INDEXER:WORD-LIST))))
-		;(calculate-class-metrics complement)
-		;(print (count-vocabulary :ignore classId))
-		;(print "printing")
-		(print oben)
-		(print unten);+1 ist ai, konstant eins für vereinfachung
-		;(print (/ oben unten))
-		))
-			;
-	;(let* ((Nci (* (log + 1 (count-occurrence-in-other-classes classId word)) inverse-document-frequency word))
-	;	  (Nc  (- (apply '+ (mapcar (lambda (class) (if (equal classId (second class)) 0 (get (second class) 'INDEXER:LENGTH))) (get *corpus* 'CLASSES))) (get classId 'INDEXER:LENGTH)))
-	;	  (ai 1) ;smoothing parameter, sind vorerst nur 1 und somit etwas vernachlässigbar
-	;	  (a  (length (apply 'union (mapcar (lambda (class) (if (equal classId (second class)) NIL (mapcar (lambda (w) (first w)) (get (second class) 'INDEXER:WORD-LIST)))) (get *corpus* 'CLASSES)))))) ;;anz. einzigartige wörter
-	;	  (print a)
-		  ;(print `(Nci ,Nci Nc ,Nc))
-	;	  (print `(result ,(/ (+ Nci ai) (+ Nc a))))
-	;))
+			(a 0);(count-vocabulary :ignore classId))
+			(oben (mapcan (lambda (document)  (mapcar (lambda (word) (setf a (+ a 1)) (list (first word) (+  (tf-idf document (first word)) 1))) (get classId 'INDEXER:WORD-LIST))) (get-documents :ignore classId)))
+			(unten (+ a (apply '+ (mapcan (lambda (document) (mapcar (lambda (word) (normalize (tf-idf document (first word)))) (get complement 'INDEXER:WORD-LIST))) (get-documents :ignore classId)))))
+			(weights (mapcar (lambda (o) (list (first o) (log  (/ (second o) unten)))) oben)))
+
+			; das ergebnis muss noch an die klasse gehangen werden
+			(setf (get classId 'WEIGHTS) (normalize-weights weights))
+			))
 	
 (defun count-vocabulary (&key (ignore nil)) ;zählt alle einzigartigen wörter im corpus
-	(length (remove-duplicates (mapcan (lambda (class) (mapcar (lambda (w) (first w)) (get (second class) 'INDEXER:WORD-LIST))) (get-classes :ignore ignore)))))	
+	(length (remove-duplicates (mapcan (lambda (document) (mapcar (lambda (word) (first word)) (get document 'INDEXER:WORD-LIST))) (get-documents :ignore ignore)))))	
 	
 (defun new-document-class (class-name &key (add-to-corpus T))
 	(let ((doc-class (assoc class-name (get *corpus* 'CLASSES) :test 'string-equal)))
@@ -152,7 +81,7 @@
 		doc-class))))
 		
 (defun add-document (doc-class docId)
-	(let ((documents (get doc-class 'DOCUMENT))
+	(let ((documents (get doc-class 'DOCUMENTS))
 		  (N (get doc-class 'N)))
 	(setf (get doc-class 'DOCUMENTS) (cons docId documents))
 	(setf (get doc-class 'N) (+ (get doc-class 'N) 1)))
@@ -160,7 +89,9 @@
 	
 	(indexer:append-wordlist doc-class (get docId 'INDEXER:WORD-LIST))
 	doc-class)
-	
+
+(defun get-num-docs (&key (ignore nil))
+	(length (get-documents :ignore ignore)))
 
 (defun new-document-corpus ()
 	(let ((corpus (gensym "DOC-CORPUS-")))
@@ -170,19 +101,18 @@
 		(setf (get corpus 'CLASSES) NIL)
 		corpus))
 
-(defun count-occurrence-in-other-classes (classId word)
-	(apply '+ (mapcar (lambda (class) (if (equal classId (second class)) 0 (let ((found (find word (get (second class) 'INDEXER:WORD-LIST) :test (lambda (f l) (string-equal (first f) (first l))))))
-																				(if found (second found) 0))));(count-word-frequency (second class) word))) 
-		(get *corpus* 'CLASSES))))
-
+		
+(defun get-documents (&key (ignore nil))
+	(let ((ignore-docs nil))
+	(if ignore (setf ignore-docs (get ignore 'DOCUMENTS)))
+	(remove-duplicates (mapcan (lambda (class) (mapcan (lambda (document) (if (member document ignore-docs) nil (list document))) (get (second class) 'DOCUMENTS))) (get *corpus* 'CLASSES)))))
+	
 (defun get-classes (&key (ignore nil)) 
 	(if (not ignore) (get *corpus* 'CLASSES) (remove-if (lambda (c) (equal (second c) ignore)) (get *corpus* 'CLASSES))))
 	
 (defun get-complement-class (class)
 	(let ((complement (new-document-class (concatenate 'string "complement-" (get class 'NAME)) :add-to-corpus NIL))
 		 (other-classes (get-classes :ignore class)))
-		;(print other-classes)
-		;(print complement)
 		(map 'nil (lambda (c) (let ((id (second c)) 
 				                    (l (get complement 'INDEXER:LENGTH))
 									(n (get complement 'N))
