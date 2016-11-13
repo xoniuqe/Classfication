@@ -11,7 +11,7 @@
 		   (article-length 0))
 
 		  ; (textlength (length splitted-text)))
-		   (print splitted-text)
+		  ; (print splitted-text)
 		   ;(mapcar 'print splitted-text)
 		   ;TODO remove punctuation, and if wanted add sentences 
 		   ; maybe 2 and 3 word combinations
@@ -35,7 +35,7 @@
 		)) word-list))
 		((not wordlist) word-list)
 		(T wordlist)))
-		(print wordlist)
+		;(print wordlist)
 	 ;(if (and wordlist word-list)(calculate-word-metrics index))
 	 )
 	index)
