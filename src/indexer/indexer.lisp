@@ -6,16 +6,20 @@
 	;Text has to be a single string
 	
 	(let* ((text (get document 'ARTICLEREADER::FULLTEXT))
-		   (splitted-text(cl-ppcre:split "[ ]+" text)))
+		   ;(splitted-text(cl-ppcre:split "\\s+" text)))
+		   (splitted-text(cl-ppcre:split "[\\s+\\xC2\\xA0]" text))
+		   (article-length 0))
+
 		  ; (textlength (length splitted-text)))
-		   ;(print splitted-text)
+		   (print splitted-text)
 		   ;(mapcar 'print splitted-text)
 		   ;TODO remove punctuation, and if wanted add sentences 
 		   ; maybe 2 and 3 word combinations
 		   (mapcar (lambda (word) ;(print word) 
-							(increment-word indexed-document word)
+							(if (string-equal word "") NIL 
+							(progn (increment-word indexed-document word) (setf article-length (+ article-length 1))))
 			) splitted-text)
-		   (setf (get indexed-document 'length) (length splitted-text))
+			(setf (get indexed-document 'length) article-length)
 		   (setf (get indexed-document 'document) document)
 		   ;(calculate-word-metrics indexed-document)
 		   )	   
@@ -56,15 +60,6 @@
 		(setf (get index 'word-list) word-list)))
 
 
-;(defun tf-log-normalization (wcount)
-;	(log (+ wcount 1)))
-	
-;(defun tf-double-normalization (wcount wcountmax) 
-	;(+ 0.5 (* 0.5 (/ wcount wcountmax))))		
-;(defun increment-word (index word)
-	;(let ((iword (intern word)))
-	;(cond ((not (get index iword)) (setf (get index iword) 1))
-	;	(T (let ((count (get index iword))) (setf (get index iword) (+ count 1)))))))
 
 ;Word symbol is only needed if we want to store more complex informations about words
 (defun new-word ()
