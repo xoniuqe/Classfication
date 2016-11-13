@@ -24,6 +24,10 @@
   (load (current-pathname "classificator/classificator" "asd"))
   (ql:quickload :classificator))
 
+(defun load-gui ()
+  (load (current-pathname "gui/gui" "asd"))
+  (ql:quickload :gui))
+
 ;general setup
 (defun setup (&key install-quicklisp)
    ;Wenn quicklisp nicht installiert
@@ -36,9 +40,14 @@
   (load-articlereader)
   (load (current-pathname "website-crawler/new_iis_start_small"))
   (load-indexer)
-  (load-classificator))
+  (load-classificator)
+  (load-gui))
 
 (setup)
+
+(load-gui)
+(gui:define-interface)
+(gui:display)
 
 ; needs drakma, loaded with myproject
 ;Drakma needs openSSl 1.0.1, the version 1.1.0 removed to much functionality
@@ -70,42 +79,31 @@
 (setf index2 (indexer:make-index article2))
 
 
-(symbol-plist index)
-(setf sortlist (copy-list (symbol-plist index)))
-(setf word-list (cadddr sortlist))
-(assoc "die" word-list :test (lambda (w1 w2)  (print (and (listp w1) (listp w2) (string-equal (first w1) (first w2))))))
-
-(setq wordlist (cadr (cddddr sortlist)))
-
-(indexer:append-wordlist index wordlist)
-
-; (remove-if (lambda (w) (or (> (nth 3 w) 1.5) (< (nth 3 w) 0.7))) wordlist)
 
 (load-classificator)
 
 (classificator:setup)
-(setq testClass (classificator:new-document-class "test"))
-(setq testClass2 (classificator:new-document-class "test2"))
+(setq testclass (classificator:new-document-class "test"))
+(setq testclass2 (classificator:new-document-class "test2"))
 
-;Classificator tests
-(classificator:add-document testClass index)
+;classificator tests
+(classificator:add-document testclass index)
 
-(classificator:add-document testClass2 index2)
+(classificator:add-document testclass2 index2)
 
-(classificator:calculate-class-metrics testClass)
-(classificator:calculate-class-metrics testClass2)
 
-(classificator:multinominial-naive-bayes index)
 
-(classificator:calculate-complementary-frequency testClass)
- 
-(classificator:get-complement-class testClass2)
-(classificator:get-classes-without "12")
 
-;(remove-if (lambda (class) (string-equal (first-class name))) (get 'DOC-CORPUS-6947 'CLASSIFICATOR:CLASSES))
+(classificator:calculate-corpus-metrics)
+
+(classificator:classify-document index)
+
+
+
 
 (setf *html-page* (webengine++lisp-webfetcher 0 "http://www.spiegel.de/wirtschaft/soziales/fluechtlinge-in-deutschland-sind-oft-ueberqualifiziert-a-1111237.html" :want-string T))
 
+(setf *spon-politik-deutsch* (webengine++lisp-webfetcher 0 "http://www.spiegel.de/politik/deutschland/" :want-string T))
 
 (setf *spon-structure*
       '(:SEQUENCE (:SPAN ((:CLASS "headline-intro")) :HEADLINE-INTRO)
@@ -114,13 +112,27 @@
         (:P ((:CLASS "article-intro")) :ARTICLE-INTRO)
         (:DIV ((:CLASS "article-section clearfix")) (:PARALLEL (:P NIL :TEXT))))
 )
+;#content-main
+(setf *spon-category-structure*
+      '(:SEQUENCE (:DIV ((:ID "content-main") (:CLASS "grid-channel spSmallScreen clearfix"))  
+                        (:PARALLEL (:DIV ((:CLASS "column-both")) (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))))
+                  (:DIV ((:CLASS "column-both main-content")) 
+                        (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))
+                                   (:DIV ((:CLASS "teaser")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))))))
 
-;<time class="timeformat" itemprop="datePublished" datetime="2016-10-15 11:01:00">
-			;		Samstag, <b>15.10.2016 </b>&nbsp;
-			;		11:01 Uhr</time>
 
-(articlereader:parse-html *html-page*)
+(articlereader:parse-html *spon-politik-deutsch*)
+
+(articlereader:fetch-article *spon-politik-deutsch* *spon-category-structure* '())
+
 
 (load-articlereader)
 (articlereader:fetch-article *html-page* *spon-structure* '())
 
+
+(setf *sueddeutsche-category-structure*
+      '(:SEQUENCE (:DIV ((:ID "wrapper"))  
+                        (:PARALLEL (:DIV ((:ID "sitecontent")(:CLASS "mainpage")(:ROLE "main")) (:PARALLEL (:DIV ((:CLASS "teaser toptop")) :TEASER)))))
+                  (:DIV ((:CLASS "column-both main-content")) 
+                        (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))
+                                   (:DIV ((:CLASS "teaser")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))))))
