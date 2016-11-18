@@ -24,6 +24,11 @@
   (load (current-pathname "classificator/classificator" "asd"))
   (ql:quickload :classificator))
 
+
+(defun load-data ()
+  (load (current-pathname "data/data" "asd"))
+  (ql:quickload :data))
+
 (defun load-gui ()
   (load (current-pathname "gui/gui" "asd"))
   (ql:quickload :gui))
@@ -41,9 +46,33 @@
   (load (current-pathname "website-crawler/new_iis_start_small"))
   (load-indexer)
   (load-classificator)
+  (load-data)
   (load-gui))
 
 (setup)
+
+
+(data:read-categories (current-pathname "../data/categories" "txt"))
+
+(data:get-category-name 1)
+
+(data:read-links (current-pathname "../data/spiegel-data" "txt"))
+
+
+(data:read-structures (current-pathname "../data/structure" "txt"))
+
+(data:get-struct "spiegel")
+
+
+(data:set-webfetcher (defun webfetcher (link)
+  (webengine++lisp-webfetcher 0 link :want-string T)
+))
+
+(data:build-classificator (current-pathname "../data/categories" "txt") (current-pathname "../data/structure" "txt") (list (current-pathname "../data/spiegel-data" "txt")))
+
+(mapcar (lambda (tuple) 
+          (list (first tuple) (get (get (first tuple) 'INDEXER:DOCUMENT) 'ARTICLEREADER:HEADLINE) (second tuple))
+) (data:test-classificator))
 
 (load-gui)
 (gui:define-interface)
@@ -56,7 +85,7 @@
 
 (setf *html-page* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik/bundesregierung-falsche-richtung-spd-1.3154952" :want-string T))
 
-(setf *html-page2* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik/tuerkei-tuerkei-erlaubt-bundestagsabgeordneten-reise-nach-incirlik-1.3153593" :want-string T))
+(setf *html-page2* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik/rechtsextremismus-neonazis-besitzen-schusswaffen-1.2895449" :want-string T))
 
 ;(:DIV ((:CLASS "header")) ("8. September 2016, 12:54 Uhr" (:H2 NIL ((:STRONG NIL ("Türkei")) "Türkei erlaubt Bundestagsabgeordneten Reise nach Incirlik"))))
 
@@ -96,7 +125,7 @@
 
 (classificator:calculate-corpus-metrics)
 
-(classificator:classify-document index)
+(classificator:classify-document index2)
 
 
 
@@ -108,20 +137,30 @@
 (setf *spon-structure*
       '(:SEQUENCE (:SPAN ((:CLASS "headline-intro")) :HEADLINE-INTRO)
         (:SPAN ((:CLASS "headline")) :HEADLINE)
-        (:DIV ((:CLASS "timeformat") (:ITEMPROP "datePublished") (:DATETIME :IGNORE)) (:SEQUENCE (:SPAN ((:CLASS "article-function-date")) (:SEQUENCE :IGNORE :DATE :IGNORE)))) 
-        (:P ((:CLASS "article-intro")) :ARTICLE-INTRO)
-        (:DIV ((:CLASS "article-section clearfix")) (:PARALLEL (:P NIL :TEXT))))
+        (:P ((:CLASS "article-intro")) (:SEQUENCE (:STRONG NIL :TEXT)));:ARTICLE-INTRO)))
+        (:DIV ((:CLASS "timeformat") (:ITEMPROP "datePublished") (:DATETIME :DATE)) ()); (:SEQUENCE (:SPAN ((:CLASS "article-function-date")) (:SEQUENCE :IGNORE :DATE :IGNORE)))) 
+        
+        (:DIV ((:CLASS "article-section clearfix") (:ITEMPROP "articleBody")) (:PARALLEL (:P NIL :TEXT))))
 )
+
 ;#content-main
+;(setf *spon-category-structure*
+ ;     '(:SEQUENCE (:DIV ((:ID "content-main") (:CLASS "grid-channel spSmallScreen clearfix"))  
+  ;                      (:PARALLEL (:DIV ((:CLASS "column-both")) (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))))
+   ;               (:DIV ((:CLASS "column-both main-content")) 
+    ;                    (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))
+     ;                              (:DIV ((:CLASS "teaser")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))))))
+
+
 (setf *spon-category-structure*
       '(:SEQUENCE (:DIV ((:ID "content-main") (:CLASS "grid-channel spSmallScreen clearfix"))  
-                        (:PARALLEL (:DIV ((:CLASS "column-both")) (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))))
+                        (:PARALLEL (:DIV ((:CLASS "column-both")) (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:PARALLEL (:H2 ((:CLASS "article-title ")) (:PARALLEL (:A ((:ID :TEASER) (:TITLE :IGNORE)) NIL)))))))))
                   (:DIV ((:CLASS "column-both main-content")) 
-                        (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))
-                                   (:DIV ((:CLASS "teaser")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))))))
+                        (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) (:PARALLEL (:A ((:ID :TEASER) (:TITLE :IGNORE)) NIL)))))))
+                                   (:DIV ((:CLASS "teaser")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) (:PARALLEL (:A ((:ID :TEASER) (:TITLE :IGNORE)) NIL)))))))))))
 
 
-(articlereader:parse-html *spon-politik-deutsch*)
+(articlereader:parse-html *html-page*)
 
 (articlereader:fetch-article *spon-politik-deutsch* *spon-category-structure* '())
 
@@ -132,9 +171,13 @@
 
 (setf *sueddeutsche-politik* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik" :want-string T))
 
+;(setf *sueddeutsche-category-structure*
+ ;     '(:SEQUENCE (:DIV ((:ID "wrapper"))
+  ;                      (:PARALLEL (:DIV ((:ID "sitecontent")(:CLASS "mainpage")(:ROLE "main")) (:PARALLEL (:DIV ((:CLASS "teaser toptop")) :TEASER) (:DIV ((:CLASS "teaser top")) :TEASER)))))))
+
 (setf *sueddeutsche-category-structure*
       '(:SEQUENCE (:DIV ((:ID "wrapper"))
-                        (:PARALLEL (:DIV ((:ID "sitecontent")(:CLASS "mainpage")(:ROLE "main")) (:PARALLEL (:DIV ((:CLASS "teaser toptop")) :TEASER) (:DIV ((:CLASS "teaser top")) :TEASER)))))))
+                        (:PARALLEL (:DIV ((:ID "sitecontent")(:CLASS "mainpage")(:ROLE "main")) (:PARALLEL (:DIV ((:CLASS "teaser toptop")) (:PARALLEL (:A ((:ID :TEASER) (:CLASS "entry-title") (:REL "bookmark") (:DATA-PAGETYPE "STANDARD_ARTICLE") (:DATA-ID :IGNORE)) ()))) (:DIV ((:CLASS "teaser top")) (:PARALLEL (:A ((:ID :TEASER) (:CLASS "entry-title") (:REL "bookmark") (:DATA-PAGETYPE "STANDARD_ARTICLE") (:DATA-ID :IGNORE)) ())))))))))
                  ; (:DIV ((:CLASS "column-both main-content")) 
                   ;      (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))
                    ;                (:DIV ((:CLASS "teaser")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) :TEASER)))))))))
