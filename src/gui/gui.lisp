@@ -22,7 +22,7 @@
    
    (result-list capi:multi-column-list-panel 
            :title "Ausgabe"
-		   :columns '((:width (:character 25) :title "HEADLINE") (:width (:character 15) :title "RATING") (:width (:character 25) :title "LINK"))
+		   :columns '((:width (:character 25) :title "HEADLINE") (:width (:character 10) :title "RATING") (:width (:character 25) :title "LINK"))
 		   :items '((a 1 "https") (b 2 "link2") (c 3 "noch ein link"))
            :enabled :read-only ;keine Eingabe möglich
            :visible-min-height 50;'(:character 10)
