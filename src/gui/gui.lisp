@@ -3,7 +3,7 @@
 (in-package #:gui)
 
 (defun define-interface () 
-	(capi:define-interface classification-interface()
+(capi:define-interface classification-interface()
   ()
   (:panes
    (clr_open-file capi:push-button
@@ -19,6 +19,15 @@
            :text "Noch keine Eingabe vorhanden"
            :visible-min-height '(:character 15)
            :visible-min-width '(:character 50))
+   (search-field capi:text-input-pane
+			:title "Suche"
+			:visible-min-width '(:character 50)
+			)
+   (search-button capi:push-button
+		:text "Suchen"
+		:callback-type :none
+              :selection-callback (lambda () (print "search:") (print (capi:text-input-pane-text search-field)))  
+	)
    
    (result-list capi:multi-column-list-panel 
            :title "Ausgabe"
@@ -29,8 +38,15 @@
            :visible-max-height 100;'(:character 10)
            :visible-min-width 100;'(:character 50)
 ))
+(:menus 
+	(file-menu "File"
+                (("Open"))
+                :selection-callback 'file-choice))
+				
+(:menu-bar file-menu)
 (:layouts
- (main-layout capi:column-layout '(row-of-buttons clr_inp result-list))
+ (main-layout capi:column-layout '(row-of-buttons search-row result-list))
+ (search-row capi:row-layout '(search-field search-button))
  (row-of-buttons capi:row-layout '( clr_open-file)))
 
 
@@ -41,6 +57,6 @@
 
 ;;Erzeugung der Gui
 (defun display ()
-  (setq clr_GUI(capi:display (make-instance 'classification-interface))))
+  (setq clr_GUI(capi:display (make-instance 'classification-interface :min-width 700))))
 
 ;(display *)
