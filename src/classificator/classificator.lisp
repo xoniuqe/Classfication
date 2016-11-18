@@ -10,19 +10,28 @@
 ;erst mal nur eine klasse pro dokument zurückgeben
 (defun classify-document (document)
  ;(mapcar (lambda (class) (list class (document-value document (second class)))) (get-classes)))
-	(sort (mapcar (lambda (class) (list class (document-value document (second class)))) (get-classes)) #'< :key 'second))
+	(let* ((sorted (sort (mapcar (lambda (class) (list class (document-value document (second class)))) (get-classes)) #'< :key 'second))
+		  (rel (first sorted))
+		  (result (list rel)))
+		 (if (not (equal (second rel) 0))
+		(map 'nil (lambda (elem) 
+			(let ((ratio (/ (second elem) (second rel)))) (if (>= ratio 0.8) (setf result (append result elem))))) (rest sorted)))
+		result
+	))
 
 (defun document-value (document classId)
-	(apply '+ (mapcar (lambda (x) (let ((r (find (first x) (get classId 'WEIGHTS) :key 'first :test 'string-equal))) (if r (nth 2 r) 0.0))) (get document 'INDEXER:WORD-LIST))))
+	(util:sum-list (mapcar (lambda (x) (let ((r (find (first x) (get classId 'WEIGHTS) :key 'first :test 'string-equal))) (if r (nth 2 r) 0.0))) (get document 'INDEXER:WORD-LIST))))
 	
 
 ;(apply '+ (mapcar (lambda (x) (let ((r (find (first x) test :key 'first :test 'string-equal))) (if r (nth 2 r) 0))) (get testClass 'INDEXER:WORD-LIST)))
 ;alle gewichte für alle klassen (neu-) berechnen
 (defun calculate-corpus-metrics () 
+	;(setup) ;eventuell aufrufen um den corpus neu zu berechnen
 	(mapcar (lambda (class) (calculate-weights (second class))) (get-classes)))
 
 (defun setup () 
-	(setq *corpus* (new-document-corpus)))
+	(setq *corpus* (new-document-corpus))
+	(setq *sum-of-words* NIL))
 
 (defun tf-idf (document word );(&key (ignore nil)))
 	(* (term-frequency document word) (inverse-document-frequency word)));ignore)))
@@ -45,19 +54,22 @@
 
 (defun normalize (tfidf)
 ;lambda ausdruck auslagern, damit die berechnung nicht so ineffizient ist
-	(/ tfidf (sqrt (apply '+ (mapcan (lambda (document) (mapcar (lambda (w) (expt (tf-idf document (first w)) 2)) (get document 'INDEXER:WORD-LIST))) (get-documents))))))		   
+	(/ tfidf *sum-of-words*))		   
 
 (defun normalize-weights (weights) 
 	;sum-of-weights auslagern für effizienz
-	(let ((sum-of-weights (apply '+ (mapcar (lambda (w) (abs (nth 1 w))) weights))))
+	(let ((sum-of-weights (util:sum-list (mapcar (lambda (w) (abs (nth 1 w))) weights))))
 		(setf weights (mapcar (lambda (w) (append w `(,(/ (nth 1 w) sum-of-weights)))) weights))))
 
-
+(defun sum-of-words () 
+	(sqrt (util:sum-list (mapcan (lambda (document) (mapcar (lambda (w) (expt (tf-idf document (first w)) 2)) (get document 'INDEXER:WORD-LIST))) (get-documents)))))
+		
 (defun calculate-weights (classId)
+	(if (not *sum-of-words*) (setq *sum-of-words* (sum-of-words)))
 	(let* ((complement (get-complement-class classId))
 			(a 0);(count-vocabulary :ignore classId))
 			(oben (mapcan (lambda (document)  (mapcar (lambda (word) (setf a (+ a 1)) (list (first word) (+  (tf-idf document (first word)) 1))) (get classId 'INDEXER:WORD-LIST))) (get-documents :ignore classId)))
-			(unten (+ a (apply '+ (mapcan (lambda (document) (mapcar (lambda (word) (normalize (tf-idf document (first word)))) (get complement 'INDEXER:WORD-LIST))) (get-documents :ignore classId)))))
+			(unten (+ a (util:sum-list (mapcan (lambda (document) (mapcar (lambda (word) (normalize (tf-idf document (first word)))) (get complement 'INDEXER:WORD-LIST))) (get-documents :ignore classId)))))
 			(weights (mapcar (lambda (o) (list (first o) (log  (/ (second o) unten)))) oben)))
 
 			; das ergebnis muss noch an die klasse gehangen werden
