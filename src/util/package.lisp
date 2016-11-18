@@ -2,7 +2,7 @@
 
 (defpackage #:util
   (:use #:cl)
-  (:export :read-file :write-file))
+  (:export :read-file :write-file :sum-list))
 
   
 
