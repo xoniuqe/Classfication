@@ -2,7 +2,7 @@
 
 (defpackage #:indexer
   (:use #:cl)
-  (:export :make-index :append-wordlist :word-list :length :new-index)
+  (:export :make-index :append-wordlist :word-list :length :new-index :document)
  )
 
   

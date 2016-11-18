@@ -47,7 +47,7 @@
 		   (cond ((not wpos) (setf word-list (append `((,word 1)) word-list)))
 			     (T (rplacd wpos (list (+ (second wpos) 1)))))
 			(setf (get index 'word-list) word-list)
-					   (print word-list)
+					  ; (print word-list)
 					   word-list))
 
 ;metriken anwenden					   
