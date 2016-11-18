@@ -1,0 +1,10 @@
+(
+("spiegel" (:SEQUENCE (:DIV ((:ID "content-main") (:CLASS "grid-channel spSmallScreen clearfix"))  
+                        (:PARALLEL (:DIV ((:CLASS "column-both")) (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:PARALLEL (:H2 ((:CLASS "article-title ")) (:PARALLEL (:A ((:ID :TEASER) (:TITLE :IGNORE)) NIL)))))))))
+                  (:DIV ((:CLASS "column-both main-content")) 
+                        (:PARALLEL (:DIV ((:CLASS "teaser teaser-first")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) (:PARALLEL (:A ((:ID :TEASER) (:TITLE :IGNORE)) NIL)))))))
+                                   (:DIV ((:CLASS "teaser")) (:SEQUENCE (:DIV ((:CLASS "clearfix")) (:PARALLEL (:H2 ((:CLASS "article-title ")) (:PARALLEL (:A ((:ID :TEASER) (:TITLE :IGNORE)) NIL))))))))))
+)
+("sueddeutsche" (:SEQUENCE (:DIV ((:ID "wrapper"))
+                        (:PARALLEL (:DIV ((:ID "sitecontent")(:CLASS "mainpage")(:ROLE "main")) (:PARALLEL (:DIV ((:CLASS "teaser toptop")) (:PARALLEL (:A ((:ID :TEASER) (:CLASS "entry-title") (:REL "bookmark") (:DATA-PAGETYPE "STANDARD_ARTICLE") (:DATA-ID :IGNORE)) ()))) (:DIV ((:CLASS "teaser top")) (:PARALLEL (:A ((:ID :TEASER) (:CLASS "entry-title") (:REL "bookmark") (:DATA-PAGETYPE "STANDARD_ARTICLE") (:DATA-ID :IGNORE)) ())))))))))
+)

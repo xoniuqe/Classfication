@@ -1,0 +1,12 @@
+(;Kategorien müssen nochmal überarbeitet werden
+(1 "Rechtsextremismus") 
+(2 "Gewalttaten") 
+(3 "Flüchtlingskrise")
+(4 "Extremismus") 
+(5 "Islamismus") 
+(6 "Islamischer Staat") 
+(7 "Terrorismus") 
+(8 "Kriminalität") 
+(9 "Sicherheit") 
+(10 "Europa")
+)

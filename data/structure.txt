@@ -1,0 +1,13 @@
+(
+("spiegel" (
+      (:SEQUENCE (:SPAN ((:CLASS "headline-intro")) :HEADLINE-INTRO)
+        (:SPAN ((:CLASS "headline")) :HEADLINE)
+        (:P ((:CLASS "article-intro")) (:SEQUENCE (:STRONG NIL :TEXT)))
+        (:DIV ((:CLASS "timeformat") (:ITEMPROP "datePublished") (:DATETIME :DATE)) ())
+        (:DIV ((:CLASS "article-section clearfix") (:ITEMPROP "articleBody")) (:PARALLEL (:P NIL :TEXT))))
+ NIL))
+ 
+ ("sueddeutsche" ((:SEQUENCE (:DIV ((:CLASS "header")) (:SEQUENCE (:DIV ((:DATETIME :DATE) (:CLASS "timeformat"))) (:H2 NIL (:SEQUENCE :IGNORE :HEADLINE))))
+        (:DIV ((:CLASS "body") (:ID "article-body")) (:PARALLEL (:P NIL :TEXT)))) 
+		((:A ((:DATA-PAGETYPE "THEME") (:CLASS "themelink")) (:SEQUENCE :TEXT)))))
+ )
