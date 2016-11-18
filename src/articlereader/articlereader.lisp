@@ -13,14 +13,15 @@
 		 (document (new-article)))
 		;Artikel bereinigen: Umlaute korrigieren und eingebettete Elemente auf einfachen Text reduzieren
 		(setf article (restructure-article article link-structure)) ;replaces links with the embedded text of the link
-		(print article)
+		;(print article)
 		(mapcar (lambda (content) (let ((tag (first content))
 										(value (first (rest content))))
 										(cond ((equal tag :HEADLINE) (setf (get document 'HEADLINE) value))
 											  ((equal tag :PLACE) (setf (get document 'PLACE) value))
 											  ((equal tag :HEADLINE-INTRO) (setf (get document 'INTRO) value))
 											  ((equal tag :DATE) (setf (get document 'DATE) value))
-											  ((equal tag :TEXT) (let* ((text (get document 'FULLTEXT)) (text2 "")) (mapcar (lambda (val) (setf text2 (concatenate 'string text val))) (remove nil value))  (setf (get document 'FULLTEXT) text2)))
+											  ;((equal tag :ARTICLE-INTRO) (setf (get)))
+											  ((equal tag :TEXT) (let* ((text (get document 'FULLTEXT)) (text2 "")) (mapcar (lambda (val) (setf text2 (concatenate 'string text (find-string val)))) (remove nil value))  (setf (get document 'FULLTEXT) text2)))
 											  ((equal tag :TEASER) (setf (get document 'TEASERS) (append (get document 'TEASERS) (list :TEASER value)	)))
 											  (T (progn (print (list "not found: " value)) NIL))))) 
 											  article)
@@ -28,6 +29,11 @@
 		(setf (get document 'FULLTEXT) (remove-punctuation (get document 'FULLTEXT)))
 		;TODO: set string into a single field, and generate an article symbol
 		document))	
+
+(defun find-string (val) 
+	(cond ((stringp val) val)
+		  ((listp val) (apply 'concatenate 'string (mapcar 'find-string val)))
+		  (T "")))
 
 (defun remove-punctuation (text)
 	(cl-ppcre:regex-replace-all "[.,!?\\\"]" text " "))
@@ -148,6 +154,7 @@
 	(cond ((equal argument :DATE) T)
         ((equal argument :PLACE) T)
         ((equal argument :HEADLINE) T)
+		;((equal argument :ARTICLE-INTRO) T)
 		((equal argument :TEXT) T)
 		((equal argument :TEASER) T)
 		((equal argument :TEASER-TITLE) T)
