@@ -33,6 +33,10 @@
   (load (current-pathname "gui/gui" "asd"))
   (ql:quickload :gui))
 
+(defun load-trivial-browser()
+   (load (current-pathname "trivial-open-browser/trivial-open-browser" "asd"))
+  (ql:quickload :trivial-open-browser))
+
 ;general setup
 (defun setup (&key install-quicklisp)
    ;Wenn quicklisp nicht installiert
@@ -47,10 +51,15 @@
   (load-indexer)
   (load-classificator)
   (load-data)
-  (load-gui))
+  ;(ql:quickload :uiop)
+  ;(load-trivial-browser)
+  ;(load-gui)
+)
 
 (setup)
 
+(load-trivial-browser)
+(trivial-open-browser:open-browser "https://www.spiegel.de")
 
 (data:read-categories (current-pathname "../data/categories" "txt"))
 
@@ -61,14 +70,14 @@
 
 (data:read-structures (current-pathname "../data/structure" "txt"))
 
-(data:get-struct "spiegel")
+(second (data:get-struct "sueddeutsche"))
 
 
 (data:set-webfetcher (defun webfetcher (link)
   (webengine++lisp-webfetcher 0 link :want-string T)
 ))
 
-(data:build-classificator (current-pathname "../data/categories" "txt") (current-pathname "../data/structure" "txt") (list (current-pathname "../data/spiegel-data" "txt")))
+(data:build-classificator (current-pathname "../data/categories" "txt") (current-pathname "../data/structure" "txt") (list (current-pathname "../data/new-data" "txt")))
 
 (mapcar (lambda (tuple) 
           (list (first tuple) (get (get (first tuple) 'INDEXER:DOCUMENT) 'ARTICLEREADER:HEADLINE) (second tuple))
@@ -78,9 +87,7 @@
 (gui:define-interface)
 (gui:display)
 
-; needs drakma, loaded with myproject
 ;Drakma needs openSSl 1.0.1, the version 1.1.0 removed to much functionality
-(load (current-pathname "website-crawler/new_iis_start_small"))
 
 
 (setf *html-page* (webengine++lisp-webfetcher 0 "http://www.sueddeutsche.de/politik/bundesregierung-falsche-richtung-spd-1.3154952" :want-string T))

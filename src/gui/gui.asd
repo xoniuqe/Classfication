@@ -4,7 +4,8 @@
   :description "Describe document gui here"
   :author "Tobias Arens "
   :license "Specify license here"
- ; :depends-on (#:cl-ppcre)
+  :depends-on (
+				#:trivial-open-browser)
              
   :serial t
   :components ((:file "package")
