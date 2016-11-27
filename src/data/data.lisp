@@ -5,6 +5,8 @@
 (defun read-categories (categories)
 	(setq *categories* (first (util:read-file categories)))
 	*categories*)
+
+(defun get-categories () *categories*)
 	
 (defun get-category-name (index) 
 	(second (find index *categories* :key #'first)))
@@ -12,6 +14,16 @@
 (defun read-structures (structure-file)
 	(setq *structures* (first (util:read-file structure-file)))
 	*structures*)
+	
+(defun read-page-structures (pagestructure-file)
+	(setq *pagestructures* (first (util:read-file pagestructure-file)))
+	*pagestructures*)
+
+(defun get-pagestructure-types () 
+	(mapcar 'first *pagestructures*))
+
+(defun get-pagestructure (source) 
+	(second (find source *pagestructures* :key #'first :test #'string-equal)))
 	
 (defun get-struct (source)
 	(second (find source *structures* :key #'first :test #'string-equal)))
@@ -40,7 +52,8 @@
 												(classificator:add-document class index))) (nth 1 link)))
 			) data)
 	)
-	(classificator:calculate-corpus-metrics)
+	(setq *classificator* (classificator:calculate-corpus-metrics))
+	*classificator*
 	)
 	
 (defun test-classificator ()
