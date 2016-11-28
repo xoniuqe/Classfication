@@ -51,9 +51,9 @@
   (load-indexer)
   (load-classificator)
   (load-data)
-  (ignore-errors (progn (ql:quickload :uiop)
-  (load-trivial-browser)
-  (load-gui)))
+  (ignore-errors (ql:quickload :uiop))
+  (ignore-errors (load-trivial-browser))
+  (load-gui)
 )
 
 (setup)
@@ -95,10 +95,8 @@
 (gui:set-classes (mapcar 'second (get (classificator:get-corpus) 'CLASSIFICATOR:CLASSES)))
 (gui:define-interface)
 
-(gui:display)
 
 (setq *source-pages* '(("spiegel" "http://www.spiegel.de/politik/deutschland" "http://www.spiegel.de") ("sueddeutsche" "http://www.sueddeutsche.de/politik" "")))
-
 
 (gui:set-search-function (lambda (term categories) 
                   (mapcan (lambda (source) (let* ((struct (data:get-pagestructure source))
@@ -124,6 +122,8 @@
 
 ))
 
+
+(gui:display)
 
 ;Drakma needs openSSl 1.0.1, the version 1.1.0 removed to much functionality
 
