@@ -36,7 +36,7 @@
    (result-list capi:multi-column-list-panel 
            :title "Suchergebnis"
 		   :callback-type :data
-		   :action-callback (lambda (data) (ignore-errors (trivial-open-browser:open-browser (nth 2 data))))
+		   :action-callback (lambda (data) (ignore-errors (trivial-open-browser:open-browser (nth 3 data))))
 		   :columns '((:width (:character 55) :title "Schlagzeile")  (:width (:character 30) :title "Kategorie") (:width (:character 15) :title "Bewertung") (:width (:character 100) :title "Link"))
 		 ;  :items '((a 1 "https://www.spiegel.de") (b 2 "link2") (c 3 "noch ein link"))
            :enabled :read-only ;keine Eingabe möglich
