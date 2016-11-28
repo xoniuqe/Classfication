@@ -59,9 +59,9 @@
 
 (setup)
 
-;benötigtes setup
-(load-trivial-browser)
-(trivial-open-browser:open-browser "https://www.spiegel.de")
+; zum testen
+;(load-trivial-browser)
+;(trivial-open-browser:open-browser "https://www.spiegel.de")
 
 (data:read-categories (current-pathname "../data/categories" "txt"))
 
