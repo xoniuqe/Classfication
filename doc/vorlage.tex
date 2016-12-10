@@ -55,7 +55,9 @@
 	rulesepcolor=\color{blue},
 	numbers=left,
 	linewidth=146mm,
-	xleftmargin=8mm
+	xleftmargin=8mm,
+	breaklines=true,
+	language=Lisp
 }
 \usepackage{textcomp} 			% Celsius-Darstellung
 \usepackage{amssymb,amsfonts,amstext,amsmath}	% Mathematische Symbole
@@ -72,7 +74,7 @@
 %--------------------------------------------------------------------------
 \begin{document}
 %------------------------- Titelblatt -------------------------------------
-\title{Konzeption und Implementierung eines Systems zur automatischen Analyse und Klassifikation von Berichten in Nachrichtenportalen. }
+\title{Konzeption und Implementierung eines Systems zur automatischen Analyse und Klassifikation von Berichten in Nachrichtenportalen}
 \subtitle{Conception and implementation of a system for the automatic analysis and classification of articles in newsportals}
 %---- Die Art der Dokumentation kann hier ausgewählt werden---------------
 %\project{Bachelor-Projektarbeit}
@@ -99,7 +101,7 @@
 %--------------------------------------------------------------------------
 \frontmatter 
 %--------------------------------------------------------------------------
-\input{chapters/Vorwort}				% Vorwort (optional)
+%\input{chapters/Vorwort}				% Vorwort (optional)
 \input{chapters/Kurzfassung} 			% Kurzfassung Deutsch/English
 \tableofcontents 						% Inhaltsverzeichnis
 \listoffigures 							% Abbildungsverzeichnis (optional)
@@ -108,10 +110,12 @@
 \mainmatter                        		% Hauptteil (ab hier arab. Seitenzahlen)
 %--------------------------------------------------------------------------
 % Die Kapitel werden in separaten .tex-Dateien abgelegt und hier eingebunden.
-\input{chapters/EinleitungProblemstellung}
-\input{chapters/WeitereKapitel}
-\input{chapters/Bausteine}
-\input{chapters/Beispiel}
+\input{chapters/Einleitung}
+%\input{chapters/Problemstellung}
+\input{chapters/Konzeption}
+\input{chapters/Implementierung}
+%\input{chapters/Bausteine}
+%\input{chapters/Beispiel}
 \input{chapters/ZusammenfassungAusblick}
 % ...
 %--------------------------------------------------------------------------
@@ -123,7 +127,7 @@
 \printindex 							% Index (optional)
 %--------------------------------------------------------------------------
 \begin{appendix}						% Anhänge sind i.d.R. optional
-   \include{chapters/Glossar}			% Glossar   
+   %\include{chapters/Glossar}			% Glossar   
    \include{chapters/Selbststaendigkeitserklaerung}	% Selbstständigkeitserklärung
 \end{appendix}
 

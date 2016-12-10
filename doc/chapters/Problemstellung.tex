@@ -1,0 +1,113 @@
+\chapter{Problemstellung}
+
+Damit Nachrichtenartikel korrekt Klassifiziert werden können sind mehrere Schritte notwendig, diese werden in diesem Kapitel behandelt und detaliert beschrieben.
+
+Das erste Problem ist das Einlesen von Artikeln per HTML-Link und die Bereitstellung dieser Daten für die weiteren Programmteile.
+Wenn dieser Schritt erledigt ist, muss der eingelesene Text analysiert werden und mithilfe dieser Analyse in eine Kategorie eingeordnet werden.
+
+\section{Einlesen der Nachrichtenartikel}
+
+Das Einlesen von Online-Nachrichtenartikeln besteht aus drei Schritten: Zu Beginn wird mithilfe eines sogenannten Webfetcher der HTML-Inhalt des angegebenen Links ausgelesen.
+Im zweiten Schritt wird dieser als String vorliegende Inhalt mithilfe eines HTML-Parsers ausgelesen. Die dadurch gewonnenen Daten liegen in einer Lisp-typischen Listen-Darstellung vor und können somit mit allen vorhandendenen Mitteln traversiert werden.
+Um nun den gewünschten Text aus der so verarbeiteten Seite auszulesen muss die individuelle Struktur der verschiedenen, verwendeten Nachrichtenportale berücksichtigt werden.
+Dies stellt gleichzeitig eine Einschränkung der zu entwickelnden Anwendung dar, da für jedes gewünschte Nachrichtenportal die verwendete HTML-Struktur analysiert und entsprechend ausgelesen werden muss.
+Um dies zu ermöglichen wird ein einfacher Algorithmus entwickelt, der eine hinterlegte Strukturliste sowie den geparsten HTML-Inhalt der Webseite als Eingaben erhält und mithilfe dieser die gewünschten Textteile in einem einheitlichen (Listen-) Format zurück gibt.
+Damit wird die beschriebene Einschränkung durch eine Konfigurierbarkeit der Anwendung verlagert.
+
+\subsection{HTML-Parsing}
+
+
+\section {Klassifikation der Artikel}
+
+Die Klassifikation der Artikel kann als Dokumentenklassifikation realisiert werden, welche ein bekanntes Problem aus dem Bereich des Data-, beziehungsweise Text-Mining, darstellt.
+Um dieses Problem zu lösen ist zunächst eine formale Definition des Problems nötig um Lösungsalgorithmen Verstehen und Anwenden zu können.
+
+\subsection{Formale Definition}
+
+
+Bei der Dokumentenklassifikation soll einem Dokument $d \in X$, wobei $X$ den sogenannten Dokumentenraum beschreibt und einer festen Menge an sogenannten Klassen $C = \{ c_{1}, c_{2}, ... , c_{n}\}$, die typischer von Menschen definiert werden.
+
+Diese vordefinierten Klassen werden aus einer Trainings-Menge $D$ gewonnen, die aus Tupeln $\left\langle d, c \right\rangle \in X \times C$ besteht.
+Mithilfe eines lernenden Algorithmus ist eine Klassifizierungsfunktion 
+
+\begin{equation}
+	\gamma: X \rightarrow  C 
+\end{equation}
+gesucht, die jedem Dokumenten eine eindeutige Klasse zuordnet.
+%Quelle: http://nlp.stanford.edu/IR-book/html/htmledition/the-text-classification-problem-1.html
+
+Diese Methode des Lernens wird auch überwachtes Lernen genannt, da das zu erlerndende Ergebnis mithilfe der vordefinierten Trainings-Menge abgeglichen wird. 
+
+
+\subsection{Algorithmen}
+
+Für die im voriegen Abschnitt beschriebene Klassifizierungsfrage gibt es eine Reihe von Klassifikationsverfahren, die in diesem Kapitel teilweise vorgestellt werden.
+
+\subsubsection{Naiver Bayes-Klassifikator}
+
+Der Naive Bayes-Klassifikator wird aus dem Satz von Bayes hergeleitet. Dieser beschreibt die Berechnung von bedingten Wahrscheinlichkeiten.
+
+Seien $A$ und $B$ zwei Ereignisse wobei die Wahrscheinlichkeit $P(B) > 0$. So lässt sich die bedingte Wahrscheinlichkeit, dass $A$ eintritt folgendermaßen berechnen:
+\begin{equation}
+P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)}
+\end{equation}
+
+Dieser Satz wird bei endlich vielen Ereignissen folgendermaßen angepasst:
+\begin{equation}
+P(A_i|B) = \frac{P(B|A_i) \cdot P(A_i)}{P(B)} = \frac{P(B|A_i) \cdot P(A_i)}{\sum\limits_{j=1}^n P(B|A_j) \cdot P(A_j)}
+\end{equation}
+
+Bei der Klassifikation von Texten wird die namensgebende naive Annahme gestellt, das jedes zu einer Klasse zugehörige Wort gleichermaßen Aussagekräftig bezüglich der Zuordnung ist. 
+Trotz dieser starken Vereinfachung liefert der Bayes-Klassifikator in der Regel gute Ergebnisse.
+\newline
+Für die Klassifikation von Texten wird dieser Satz folgendermaßen angepasst:
+\begin{equation}
+	P(C|W) = \frac{P(W|C) \cdot P(C)}{P(W)}
+\end{equation}
+Hierbei ist $P(W|C)$ die Wahrscheinlichkeit, dass das Wörter aus Dokument $W$ zu der Klasse $C$ gehört, $P(C)$ die Wahrscheinlichkeit der Dokumentenklasse und $P(W)$ die Wahrscheinlichkeit mit der das Dokument $W$ auftritt. 
+Dabei ist zu bedenken, dass die Wahrscheinlichkeit der Klasse $P(C)$ von ihrem Vorkommen in den Trainingsdaten abhängig ist.
+
+Die Wahrscheinlichkeit, dass ein Wort $W_i$ mit einer Klasse $C$ assoziert ist berechnet sich folgendermaßen:
+\begin{equation}
+	P(W_i|C) = \frac{\textnormal{Anzahl der Dokumente aus Klasse } C \textnormal{ mit dem Wort } W_I}{\textnormal{Anzahl aller Dokumente ohne } C}
+\end{equation}
+
+%Glättung einbringen?
+
+\subsubsection{Term Frequency-Inverse Document Frequency}
+
+Die sogennante Term Frequency-Inverse Document Frequency, kurz \textit{tf-idf}, ist ein weiteres Bewertungsmaß aus dem Gebiet der Information Retrieval. Sie ist eine numerische Statistik die zeigt wie wichtig ein Wort im Bezug zu einem Dokument oder einer Dokumentensammlung ist. 
+Dies wird als Gewichtungsfaktor in Text Mining algorithmen verwendet und kann mit dem Naive Bayes-Klassifikator kombiniert werden.
+\linebreak
+
+Die \textit{tf-idf} besteht aus den zwei namensgebenden Teilen \textit{Term frequency} und 
+\textit{Inverse document frequency}.
+\linebreak
+
+\textit{Term frequency} ist eine einfache Aufzählung der Vorkommnisse eines Wortes $w_i$ in einem Dokument $D$. 
+Da es verschiedene Varianten dieser Gewichtung gibt müssen einige Fälle unterschieden werden:
+%zahlen einbringen?
+\begin{itemize}
+	\item binär: Wertung 1 wenn das Wort im Dokument enthalten ist, sonst 0
+	\item einfache Häufigkeit: Einfaches Abzählen der Häufigkeit von $w_i$ in $D$
+	\item logarithmisch: Der Logarithmus der einfachen Häufigkeit.
+	\item doppelt normalisiert: Die einfache Häufigkeit wird durch die größte Häufigkeit von $D$ geteilt. Dies macht sehr lange und sehr kurze Dokumente besser vergleichbar.
+\end{itemize}
+
+\linebreak
+\textit{Inverse document frequency} ist ein Maß darüber wie Informativ ein Wort ist. Dies wird erreicht indem ein Verhältnis über die Anzahl der Dokumente und der Anzahl der Dokumente die das Wort $w_i$ enthalten berechnet. 
+%auf details eingehen?
+
+\subsubsection{Tackling the poor assumtion ...}
+
+Das Paper einbinden
+\ref{http://machinelearning.wustl.edu/mlpapers/paper_files/icml2003_RennieSTK03.pdf}
+
+%\subsubsection{Nächste-Nachbarn-Klassifikation}
+
+
+%\subsubsection{Support Vector Machine}
+
+
+
+

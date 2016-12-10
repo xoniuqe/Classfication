@@ -1,0 +1,454 @@
+\chapter{Implementierung}\label{Implementierung}
+
+In diesem Kapitel wird auf Implementierungsdetails der im Kapitel Konzeption beschriebenen Teilaufgaben eingegangen.
+Der verwendete Naive-Bayes-Algorithmus wird dabei nur grob beschrieben, da dieser im Kapitel \ref{algorithm} bereits ausführlich erläutert wurde.
+
+
+\section{Programmablauf}
+
+Der Programmablauf hat zwei Phasen, einmal die Startphase, in der der Klassifikationskorpus aufgebaut wird und einer zweiten Phase, in der das Programm benutzt wird und aktuelle Artikel durchsucht und klassifiziert werden.
+
+\subsection{Startphase}
+
+Die Startphase wird in der Datei \textit{setup.lisp} eingeleitet. Zu Beginn werden die verschiedenen Programmteile mithilfe von \textit{Quicklisp} in folgender Reihenfolge geladen:
+
+\begin{enumerate}
+	\item \textit{Quicklisp}: Damit \textit{Quicklisp}\footnote{\cite{Quicklisp}} die Programmteile laden kann, muss es als erstes geladen sein. \textit{Quicklisp} ist eine Paketverwaltung für Lisp welche Pakete aus sogenannten Repositories lädt, die dort von verschiedenen Entwicklern bereitgestellt werden.
+	\item \textit{Utility-Funktionen}: Im Utility-Teil sind Hilfs-Funktionen zum Lesen und Schreiben von externen Dateien vorhanden. Dies ist nötig, um die Konfiguration zu laden.
+	\item \textit{articlereader}: Dieses Paket ist notwendig, um Artikel einzulesen. 
+	\item \textit{Website-Crawler}: Dies ist eine von Kommolitonen entwickelte Anwendung, die den Textinhalt von Webseiten ausliest und als Zeichenkette zurückgibt. Diese ist nötig damit der \textit{articlereader} funktioniert.
+	\item \textit{indexer}: Diese Komponente berechnet Textmetriken der durch den \textit{articlereader} eingelesenen Artikel.
+	\item \textit{classificator}: Der Klassifikationsalgorithmus
+	\item \textit{data}: Eine Schnittstelle, die die vorkonfigurierten Dateien lädt und mithilfe des Klassifikators und einer Liste vorklassifizierter Artikel den Klassifikationskorpus erstellt.
+\end{enumerate}
+
+Nachdem diese Programmteile geladen wurden, müssen mithilfe der \textit{data}-Komponente die im Unterkapitel \ref{pre-conf} beschriebenen Konfigurationsdateien geladen werden. Dies lädt die Kategorien, die Strukturen zum Auslesen von Artikel, sowie die vorklassifizierten Artikel.
+
+Mithilfe der Funktion \textit{build-classificator} wird dann der Klassifikationskorpus erstellt. Dies ist eine rechenintensive Operation, die einige Minuten in Anspruch nimmt.
+
+Ist dies abgeschlossen kann das Programm verwendet werden.
+
+
+
+\subsection{Benutzungsphase}
+
+Nachdem das Programm wie im vorherigen Abschnitt beschrieben vorbereitet wurde, muss noch die GUI-Komponente geladen werden.
+
+Dieser Komponente müssen die Kategorien sowie die mithilfe des Klassifikators erstellten Klassen-Symbole mitgeteilt werden.
+
+Desweiteren muss eine Suchfuntkion definiert werden, die spezifiziert, was bei einer gestarteten Suche durchgeführt werden muss.
+Diese hat zwei Parameter, einmal einen Suchterm, der genutzt werden kann um nach Schlagworten zu filtern, sowie einer Liste von ausgewählten Kategorien nach denen gefiltert wird.
+
+\begin{figure}[h!]
+\centering
+\begin{lstlisting}
+(lambda (term categories) 
+	(mapcan (lambda (source) 
+		(let* (teasers (read-teasers source))
+(mapcan (lambda (teaser) 
+          (let* ((tarticle (read-article teaser-link))
+                (class  (classificator:classify-document  
+									(indexer:make-index tarticle)))
+                (class-name (first (first class)))
+                (class-value (second class)))
+                 (cond ((and categories (member class-name categories) 
+												(<= class-value -0.015))  
+												(list (list (get tarticle 'ARTICLEREADER:HEADLINE) class-name class-value (concatenate 'string prefix teaser))))
+                       ((and (not categories) (<= class-value -0.015))  (list (list (get tarticle 'ARTICLEREADER:HEADLINE) class-name class-value (concatenate 'string prefix teaser))))
+                       ((not categories) (list (list (get tarticle 'ARTICLEREADER:HEADLINE) "" 0 (concatenate 'string prefix teaser))))
+                       (T NIL)))) teasers)        
+)) (data:get-pagestructure-types)
+\end{lstlisting}
+\caption{Vereinfacht dargestellte Suchfunktion}
+\label{fig:search-function}
+\end{figure}
+
+In Abbildung \ref{fig:search-function} wird die in diesem Programm verwendete Suchfunktion vereinfacht dargestellt. Zuerst werden die sogenannten \textit{teasers} ausgelesen. Dies sind die Links einer Übersichtsseite wie "`www.spiegel.de/politik/deutschland"' die zu den konkreten Artikeln führen. Diese werden mithilfe der vorkonfigurierten Artikel- und Seitenstrukturen ausgelesen und dann klassifiziert (ab Zeile 5 \ref{fig:search-function}). Aus jedem \textit{teaser-Link} wird der Artikel ausgelesen und die Klassifikation durchgeführt.
+Danach werden vier Fälle unterschieden:
+\begin{enumerate}
+	\item Dem Artikel wurde eine Kategorie zugewiesen und diese wurde auch vom Benutzer ausgewählt (siehe Kapitel \ref{chap-search}).
+	Der Artikel wird mit der Kategorie in die Ergebnisliste geschrieben.
+	\item Dem Artikel wurde eine Kategorie zugewiesen und der Benutzer filtert nicht nach Kategorien: Der Artikel wird mit der Kategorie ebenso in die Ergebnisliste geschrieben.
+	\item Dem Artikel wurde keine Kategorie zugewiesen und es wurde nicht nach Kategorien gefiltert: der Artikel wird ohne Kategorie in die Ergebnisliste geschrieben.
+	\item Fehlerfall, der nicht auftreten sollte.
+\end{enumerate}
+
+In den Zeilen 10 und 11 ist zu sehen, dass der Bewertungswert des Artikels mit einer Konstante verglichen wird. Diese setzt einen Schwellwert fest um zu bestimmen ob die Klassifizierung relevant genug ist. Dieser Wert muss in Abhängigkeit zu der Länge der Testdaten passend gewählt werden und kann durch ausprobieren verschiedener Werte zwischen 0 und -1 bestimmt werden.
+
+\newpage
+
+\section{HTML-Parser und Textextraktion}\label{html-extract}
+
+Die \textit{articlereader} genannte Komponente liest den Text und weitere Informationen eines per Link angegebenen Nachrichtenartikels aus. 
+Ziel ist es, alle relevanten Informationen eines Artikels in einer einheitlichen Form zur weiteren Verwendung aufzubereiten. Dabei muss bei verschiedenen Nachrichtenportalen verschieden vorgegangen werden.
+Um dies zu ermöglichen wurde eine Software-Komponente aus dem Teamprojekt \textit{Entwurf und Realisierung eines Systems zur prioritätsgesteuerten Suche im Internet} der Autoren Jochen Fuchs, Jürgen Fuchs und Thomas Hormesch\footnote{\cite{TP:16}}	verwendet, die den Textinhalt einer Webseite als Zeichenkette zurückliefert.
+
+Mithilfe der Bibliothek "`closure-html"' von Gilbert Bauman\footnote{\cite{Bauman:16}} wird aus dieser Zeichenkette eine Listenstruktur erzeugt (siehe Abbildung \ref{html-parser}), mit der im weiteren Verlauf gearbeitet wird.
+Daraus resultiert eine Art Baumstruktur der HTML-Inhalte, die aus drei Teilen besteht dem HTML-Tag, einem Deskriptor und einer Liste der von dem HTML-Tag umschlossenen Inhalte. Dies können Zeichenketten oder weitere geparste HTML-Inhalte sein.
+
+\begin{figure}
+\centering
+\begin{lstlisting}%\lstset{language=html}
+
+<body> 
+	<h1>Eine Überschrift</h1> 
+	<p id="eins">Ein Satz.</p> 
+	<p id="zwei">Ein weiterer Satz.</p> 
+</body>
+\end{lstlisting}
+
+\begin{lstlisting}%\lstset{language=lisp}
+
+	(:BODY NIL (
+		(:H1 NIL ("Eine Überschrift"))
+		(:P ((:ID "eins")) ("Ein Satz."))
+		(:P ((:ID "zwei")) ("Ein weiterer Satz."))))
+\end{lstlisting}
+\caption{Beispiel der Umwandlung einer HTML-Struktur in die von "`closure-html"' erzeugte Listenstruktur}
+\label{html-parser}
+\end{figure}
+
+Nachdem aus einem Artikel eine solche mit Lisp traversierbare Struktur erzeugt wurde, muss entschieden werden welche Inhalte relevant sind. Diese Inhalte müssen ausgelesen und zur weiteren Verarbeitung gespeichert werden.
+
+Um dieses Problem zu lösen wurde eine primitive Auszeichnungssprache entwickelt, die es ermöglicht anhand aus der HTML-Struktur der Nachrichtenportale gewonnen Struktur die gewünschten Inhalte aus der HTML-Seite auszulesen.
+Diese wurde als Liste realisiert die angibt, an welcher Stelle des HTML-Codes gesuchte Inhalte zu finden sind.
+Mithilfe der zwei Bezeichner \textit{:SEQUENCE} und \textit{:PARALLEL}, kann angegeben werden ob Inhalte aufeinanderfolgend oder nebeneinander vorliegen. Dies entspricht einer Unterscheidung zwischen Tiefen- und Breitensuche.
+Abgesehen davon ist diese Auszeichnungsprache der durch "`closure-html"' erzeugten Struktur sehr ähnlich, ist allerdings um Bezeichner erweitert, die es ermöglichen Inhalte als irrelevant zu deklarieren oder aber relevante Inhalte zu speichern.
+\begin{itemize}
+	\item \textit{:IGNORE} Der Inhalt wird ignoriert. Bei Strukturvergleichen erzeugt dieser Ausdruck immer eine Übereinkunft und die Werte werden verworfen.
+	\item \textit{:TEXT} Der Inhalt wird als Artikeltext gespeichert.
+	\item \textit{:INTRO} Der Inhalt wird als Artikeleinleitung gespeichert.
+	\item \textit{:HEADLINE} Der Inhalt wird als Schlagzeile gespeichert.
+	\item \textit{:DATE} Der Inhalt wird als Datum gespeichert.
+\end{itemize}
+
+Es sind weitere Bezeichner vorhanden, diese sind allerdings nur zur internen Verarbeitung relevant und werden nicht aufgeführt.
+
+\begin{figure}
+\centering
+\begin{lstlisting}
+(:SEQUENCE 
+	(:DIV ((:CLASS "header")) (:SEQUENCE 
+		(:DIV ((:DATETIME :DATE) (:CLASS "timeformat"))) 
+		(:H2 NIL (:SEQUENCE :IGNORE :HEADLINE))))
+  (:DIV ((:CLASS "body") (:ID "article-body")) (:PARALLEL (:P NIL :TEXT))))
+\end{lstlisting}
+\caption{Auszeichnungsstruktur für Artikel der Süddeutschen Zeitung}
+\label{markup-lang}
+\end{figure}
+
+Die so ausgelesenen Informationen über den Artikel werden in einem Symbol gespeichert. Dort wird die Schlagzeile, der Text und das Veröffentlichungsdatum sowie die Textlänge gespeichert. 
+Die so erzeugten Symbole können im nächsten Schritt, der Indexierung, verwendet werden.
+
+\section{Dokumentenindexierung}
+
+Nachdem die Artikelinformationen extrahiert wurden, muss der Text des Dokuments indexiert werden. Das bedeutet, dass die Wortvorkommnisse gezählt und abgespeichert werden.
+Die Komponente \textit{indexer} hat diese Aufgabe. 
+
+Die in einem Artikel-Symbol vorliegenden Textabschnitte werden zu einem vollständigen Text zusammgengefügt und Satzzeichen werden entfernt. Dies hat den Hintergrund, dass im verwendeten Klassifizierungsalgorithmus Satzzeichen, auch Stoppzeichen genannt, keine verbesserte Klassifizierung ermöglichen. Würden Satzzeichen nicht entfernt, so würden die Satzzteile "`Berlin"', "`Berlin."', "`Berlin!"' etc. als unterschiedliche Wörter gezählt.
+
+ Dann wird ein \textit{Dictionary} verwendet um die vorhandenen Wörter in diesem abzuzählen. Dies wird mit einer simplen Iteration über alle Wörter des Textes vollbracht.
+
+So wird beispielsweise der Satz "`Ich genieße den Tag, während ich auf meinem Sessel sitze"' folgendermaßen indexiert:
+\begin{lstlisting}
+((ich 2) 
+(genieße 1) 
+(den 1)
+(Tag 1)
+(während 1)
+(auf 1)
+(meinem 1)
+(Sessel 1)
+(sitze 1))
+\end{lstlisting}
+
+\begin{figure}[h!]
+\begin{lstlisting}
+ARTICLEREADER:DATE
+	"2016-11-15 08:33:00"
+ARTICLEREADER::FULLTEXT
+	"Sie sollen Flaschen  Steine und Böller auf Polizisten geworfen haben: 
+	Für ihre Beteiligung an den Krawallen in Heidenau im August 2015 müssen zwei Männer ins Gefängnis"
+ARTICLEREADER:HEADLINE
+	("Drei Männer wegen Randale vor Flüchtlingsheim verurteilt")
+ARTICLEREADER::INTRO
+	("Heidenau")
+\end{lstlisting}
+\caption{Beispiel der \textit{Property}-List eines Artikel-Symbols}
+\label{fig:art-sym}
+\end{figure}
+
+In der Abbildung \ref{fig:art-sym} ist ein Beispiel eines eingelesen Artikels als Lisp-Symbol dargestellt.
+Wird dieser Artikel nun indexiert, resultiert daraus ein neues Symbol, das eine Liste der gezählten Wörter sowie die Anzahl der Wörter beinhaltet.
+
+
+\section{Klassifikation}
+
+Der im Kapitel \ref{TWCNB} beschriebene Algorithmus wird in der Komponente \textit{classificator} implementiert.
+
+\subsection{Klassenberechnung}
+
+Die Funktion \textit{calculate-weights} (siehe Abbildung \ref{calc-weights}) ist dabei eine der wichtigsten Funktionen. Sie berechnet die Gewichtungsfaktoren einer Klasse \textit{classId}. 
+Dafür sind fünf Schritte notwendig:
+\begin{enumerate}
+	\item Das Berechnen der komplementären Klasse $\bar{c}$; hier als \textit{complement} bezeichnet.
+	\item Das Errechnen der Gewichtungsmetriken \textit{oben} der Wörter aus \textit{classId} in allen Dokumenten \textit{document}, die nicht in \textit{classId} enthalten sind.
+	\item Die Berechnung der Summe \textit{unten} der Gewichtungsmetrik aller Wörter, die Teil von \textit{complement} sind.
+	\item Das Berechnen des logarithmischen Verhältnisses der Wörter aus \textit{oben} zu \textit{unten}.
+	\item Das Anhängen des Ergebnisses \textit{weights} an das bestehende Symbol der Klasse \textit{classId}.
+\end{enumerate}
+
+\begin{figure}
+\begin{lstlisting}
+(defun calculate-weights (classId)
+	(if (not *sum-of-words*) (setq *sum-of-words* (sum-of-words))) 
+	(let* ((complement (get-complement-class classId))
+				 (a 0)
+				 (oben (mapcan (lambda (document) 
+							(mapcar (lambda (word) (setf a (+ a 1)) 
+								(list (first word) (+ (tf-idf document (first word)) 1))) 
+							(get classId 'INDEXER:WORD-LIST)))
+						(get-documents :ignore classId)))
+				 (unten (+ a (reduce #'+ (mapcan (lambda (document) 
+							(mapcar (lambda (word) 
+								(normalize (tf-idf document (first word)))) 
+							(get complement 'INDEXER:WORD-LIST))) 
+						(get-documents :ignore classId)))))
+				 (weights (mapcar (lambda (o) 
+						(list (first o) (log  (/ (second o) unten)))) oben)))
+						
+			(setf (get classId 'WEIGHTS) (normalize-weights weights))))
+		
+\end{lstlisting}
+\caption{Gewichtungsfunktion \textit{calculate-weights}}
+\label{calc-weights}
+\end{figure}
+
+\subsection{Dokumenten-Klassifikation}\label{sec:doc-class}
+
+Eine weitere wichtige Funktion ist \textit{classify-document} (siehe Abbildung \ref{classify}). Diese führt die Klassifizierung für ein Dokument \textit{document} durch und liefert die Klasse mit der größten Übereinstimmung.
+
+Dafür wird über alle vorhandenen Klassen iteriert und die Bewertung des Dokumentes im Bezug zu dieser Klasse berechnet. Die hier verwendeten Gewichte sind die aus der Funktion \textit{calculate-weights} im Vorfeld berechneten.
+
+\begin{figure}
+\begin{lstlisting}
+(defun classify-document (document)
+	(let* ((sorted (sort (mapcar (lambda (class) (list class (document-value document (second class)))) (get-classes)) #'< :key 'second))
+		  (rel (first sorted))
+		  (result NIL))
+		 (if (not (equal (second rel) 0))
+			(setf result (list rel)))
+		(first result)))
+		
+\end{lstlisting}
+\caption{Klassifizierungsfunktion \textit{classify-document}}
+\label{classify}
+\end{figure}
+
+Das Dokument wird mithilfe der Funktion \textit{document-value} (siehe Abbildung \ref{doc-val}) bewertet. Dabei kommt eine Bewertung $-1>=b>=0$ heraus die angibt wie sehr das Dokument zu einer Klasse $class$ gehört. Dies wird mit allen vorhandenen Klassen durchgeführt. Die daraus resultierende Liste wird sortiert und das kleinste Ergebnis als die zugehörige Klasse zurückgegeben.
+Die zurückgegebene Klasse muss allerdings noch geprüft werden, da bei zu kleinem $b$ die Klassifizierung nicht genau genug ist. Dies wird allerdings von einer anderen Programmstelle erledigt und ist nicht Teil des Klassifikationsalgorithmus, da der Vergleichswert von der Größe der Trainingsmenge abhängig ist.
+
+\begin{figure}
+\begin{lstlisting}
+(defun document-value (document classId)
+	(reduce #'+ (mapcar (lambda (x) (let ((r (find (first x) (get classId 'WEIGHTS) :key 'first :test 'string-equal))) (if r (nth 2 r) 0.0))) (get document 'INDEXER:WORD-LIST))))
+\end{lstlisting}
+\caption{Bewertungsfunktion eines Dokumentes im Bezug zur Klasse \textit{classId}}
+\label{doc-val}
+\end{figure}
+
+
+Die Funktion \textit{document-value} schälgt in der zu vergleichenden Klasse \textit{classId} für jedes Wort nach, welche Gewichtung verwendet werden muss und addiert diese. Das Resultat ist die entsprechende Bewertung für das Dokument im Bezug zu der Klasse \textit{classId}.
+
+Diese Funktionen werden auf die vorklassifizierten Dokumente angewandt und daraus resultiert der Klassifikationskorpus. 
+Dieser ist ein Lisp-Symbol, das Referenzen auf alle Klassen enthält.
+Diese Klassen sind weitere Lisp-Symbole, die die im Kapitel \ref{TWCNB} beschriebenen Gewichte enthalten.
+
+\newpage
+\section{Konfigurierung und vorklassifizierte Dokumente}\label{pre-conf}
+
+Daten über die verwendeten Nachrichtenportale sowie die vorklassifizierten Dokumente sollen nicht fest in der Anwendung verankert sein und müssen konfigurierbar bleiben.
+Zu diesem Zweck wird eine Komponente namens \textit{data} entwickelt, die diese Aufgaben übernimmt.
+
+\subsection{Konfiguration}
+Die Daten über die verwendeten Nachrichten Portale werden vergleichbar mit einem Dictionary verwaltet. Die relevanten Daten werden in verschiednen Textdateien gespeichert, die beim Programmstart eingelesen werden. 
+Dadurch ist ein modularer Aufbau erreicht worden, der es prinzipiell erlaubt eine beliebige Anzahl an Nachrichtenportalen zu unterstützen. Für diese Aufgaben liegen die drei Konfigurationsdateien \textit{categories.txt}, \textit{structure.txt} und \textit{pagestructure.txt} vor.
+
+\begin{figure}[h!]
+\begin{lstlisting}
+((1 "Rechtsextremismus") 
+(2 "Fremdenfeindlichkeit")
+(3 "Gewalt")
+(4 "Rechtspopulismus")
+(5 "Fluechtlingskrise")
+(6 "Terrorismus")
+(7 "Islamismus")
+(8 "Kriminalitaet"))
+\end{lstlisting}
+\caption{Kategorienkonfiguration \textit{categories.txt}}
+\label{config_cat}
+\end{figure}
+
+Der Inhalt der Datei \textit{categories.txt} ist eine einfache Liste mit Unterlisten aller Kategorien. Diese kann als \textit{Dictionary} betrachtet werden, die alle Kategorien durchnummeriert. Dabei wird die gewählte Nummer jeder Kategorie ähnlich eines Index in einer Datenbank zur Referenzierung verwendet. Dies wird beispielsweise bei dem Hinterlegen der Trainingsdaten eingesetzt.
+
+\begin{figure}[h!]
+\begin{lstlisting}
+(...
+ ("sueddeutsche" ((:SEQUENCE (:DIV ((:CLASS "header")) (:SEQUENCE (:DIV ((:DATETIME :DATE) (:CLASS "timeformat"))) (:H2 NIL (:SEQUENCE :IGNORE :HEADLINE))))
+        (:DIV ((:CLASS "body") (:ID "article-body")) (:PARALLEL (:P NIL :TEXT)))) 
+		((:A ((:DATA-PAGETYPE "THEME") (:CLASS "themelink")) (:SEQUENCE :TEXT)))))
+ ...)
+\end{lstlisting}
+\caption{Artikelkonfiguration Süddeutsche}
+\label{config_struct}
+\end{figure}
+
+In der Abbildung \ref{config_struct} wird beschrieben wie ein Nachrichtenartikel einer Webseite ausgelesen wird. Dabei wird zuerst ein Kürzel des Portals angegeben (in diesem Fall "`sueddeutsche"') und danach eine Liste mit zwei Unterlisten. Erstere ist eine wie im Unterkapitel \ref{html-extract} beschriebene Liste zur Beschreibung der Artikelstruktur und zweitere eine ähnlicher Liste, die automatisch zu entfernende Links spezifiziert. 
+Das automatisierte Entfernen von Links ist in manchen Fällen nötig, da einige Links den Textfluss komplizierter gestalten und ausgelesene Texte ansonsten nachträglich verändert werden müssten.
+
+\begin{figure}[h!]
+\begin{lstlisting}
+(...
+("sueddeutsche" (:SEQUENCE (:DIV ((:ID "wrapper"))
+                        (:PARALLEL (:DIV ((:ID "sitecontent")(:CLASS "mainpage")(:ROLE "main")) (:PARALLEL (:DIV ((:CLASS "teaser toptop")) (:PARALLEL (:A ((:ID :TEASER) (:CLASS "entry-title") (:REL "bookmark") (:DATA-PAGETYPE "STANDARD_ARTICLE") (:DATA-ID :IGNORE)) ()))) (:DIV ((:CLASS "teaser top")) (:PARALLEL (:A ((:ID :TEASER) (:CLASS "entry-title") (:REL "bookmark") (:DATA-PAGETYPE "STANDARD_ARTICLE") (:DATA-ID :IGNORE)) ())))))))))
+...)
+\end{lstlisting}
+\caption{Seitenkonfiguration Süddeutsche}
+\label{config_page}
+\end{figure}
+
+Die dritte Konfigurationsdatei \textit{pagestructure.txt} enthält eine weitere Art Artikelstruktur, die allerdings für Übersichtsseiten, die eine Artikelsammlung darstellen verwendet wird. Mithilfe der hinterlegten Strukturen lassen sich alle Artikel-Links einer Seite auslesen. Dies wird in der Anwendung genutzt um eine Liste aktueller Artikel zu bekommen und diese zu klassifizieren und in der Ergebnisliste (siehe Abbildung \ref{gui_result}) der graphischen Oberfläche zu hinterlegen.\\
+
+
+
+\subsection{Vorklassifizierte Dokumente}
+
+Um eine Datengrundlage zu schaffen wurden 58 Nachrichtenartikel in diese Themen eingeordnet. Da diese Themen teilweise inhaltlische Überschneidungen haben, wurden ihnen in diesem Fall mehrere Kategorien zugeteilt. 
+
+Damit diese Daten einfach von der Lisp-Applikation geladen werden können, sind diese in einer Textdatei in einer Lisp-typischen Listenstruktur (siehe Abbildung \ref{data-example}) gespeichert. Diese Liste enthält für jede Quelle eine weitere Liste der Struktur $(Link \, (C_1 \, ... \, C_n) \, Quelle)$.
+
+\begin{figure}[h!]
+\begin{lstlisting}
+(("http://www.spiegel.de/politik/deutschland/[...]-a-1121063.html" (1 3 5) "spiegel")
+("http://www.spiegel.de/politik/deutschland/[...]-a-1119137.html" (7 8) "spiegel")
+("http://www.spiegel.de/politik/deutschland/[...]-a-1121045.html" (5 6 7) "spiegel"))
+\end{lstlisting}
+\caption{Beispiel einer Datengrundlage}
+\label{data-example}
+\end{figure}
+
+Die Zahlen $C1 \, ... \, C$ entsprechen den in der Kategorienkonfiguration angelegten Indizes der Kategorien.
+Die Angabe der Quelle ist nötig, da beispielsweise Links auf \textit{Spiegel-Online} ohne das Präfix "`www.spiegel.de"' angegeben sind und diese Information zum Auslesen von Links mit angegeben werden muss. Desweiteren wird über diese Quellenangabe die entsprechnde Artikelstruktur geladen, damit die korrekten Textinhalte extrahiert werden können.\\
+
+Diese Artikel werden von der Funktion \textit{build-classificator} eingelesen und dann mithilfe der \textit{classificator}-Komponente zum Erstellen des Klassifikationskorpus genutzt.
+
+
+\newpage
+\section{Graphische-Benutzer-Oberfläche}\label{chap-gui}
+
+In diesem Kapitel wird die durch die \textit{gui} genannte Komponente erstellte Graphische-Benutzer-Oberfläche beschrieben.
+Im ersten Unterpunkt wird auf die Suche und Filterung eingegangen, im zweiten auf die Übersicht der verwalteten Daten.
+
+\subsection{Suche}\label{chap-search}
+
+Das Hauptfenster (siehe Abbildung \ref{gui_main}) hat zwei Reiter. Der \textit{Such}-Reiter beinhaltet ein Suchfeld mit dem die gesuchten Artikel per Schlagwort eingegrenzt werden können, ein Auswahlfeld aller Kategorien mit denen diese gefiltert werden können und eine Ergebnisliste.
+Diese listet die Schlagzeile, die Kategorie, eine Bewertungszahl und einen Link zu dem Artikel auf.
+
+\begin{figure}[h!]
+	\begin{minipage}{\linewidth}
+		\centering
+		\makebox[\linewidth]{
+			\includegraphics[width=\textwidth]{images/gui_main}}
+	\end{minipage}
+	\caption{Hauptfenster der Anwendung}
+	\label{gui_main}
+\end{figure}
+
+%Nach Hauptfenster
+
+\begin{figure}[h!]
+\begin{minipage}{\linewidth}
+	\centering
+	\includegraphics[width=\textwidth]{images/gui_main_result}
+		\end{minipage}
+	\caption{Ergebnis einer Suche ohne Filterung}
+	\label{gui_result}
+\end{figure}
+
+Bei der Suche gibt es drei verschiedene Möglichkeiten.
+Die einfachste Variante ist, dass weder nach Schlagworten noch nach Kategorien gefiltert wird.
+
+Die Suche beschränkt sich dabei auf die aktuellen Artikel der Kategorien \textit{Politk} beziehungsweise \textit{Deutschlandpolitik}, der Online-Nachrichtenportale \textit{Süddeutsche} und \textit{Spiegel}.
+Dies ist in der Abbildung \ref{gui_result} dargestellt.
+
+
+\begin{figure}[h!]
+\begin{minipage}{\linewidth}
+	\centering
+	\includegraphics[width=\textwidth]{images/gui_main_result_filtered}
+		\end{minipage}
+	\caption{Ergebnis einer Suche, gefiltert nach der Kategorie "`Rechtsextremismus"'}
+	\label{gui_result_filtered}
+\end{figure}
+
+Wurden eine oder mehrere Kategorien ausgewählt, so werden nur Artikel, die einer dieser Kategorien zugewiesen werden konnten, angezeigt.
+
+Diese Filterung ermöglicht eine effiziente Suche nach Themen, die für den Anwender von Interesse sind, ohne Artikel durchzusehen, die keinen inhaltlichen Bezug zum Interessengebiet haben.
+
+Im letzten Anwendungsfall gibt es die Möglichkeit, zusätzlich nach Schlagworten zu filtern. Dabei wird der Artikeltext nach Vorkommnissen durchsucht. Da diese Suche allerdings keine intelligente Suche darstellt, muss diese auf grobe Schlagworte begrenzt sein und bietet nicht die Möglichkeit zusammenhängende Sätze oder Wörter gezielt zu suchen. 
+Allerdings ermöglicht dies eine bessere Filterung nach beispielsweise Personen öffentlichen Interesses, die in den durchsuchten Artikeln erscheinen könnten.
+
+\newpage
+\subsection{Daten}
+
+
+Auf dem zweiten Reiter \textit{Daten} (siehe Abbildung \ref{gui_main_data}) können die vordefinierten Klassen in einer Baumstruktur eingesehen werden. Diese listet alle zugehörigen Dokumente 
+sowie die mit diesen assozierten Artikel auf.
+
+\newpage
+Wird ein Element ausgewählt, werden die Symbol-Attribute angezeigt mit denen Details ersichtlich sind.\\
+
+\begin{figure}[h!]
+	\begin{minipage}{\linewidth}
+		\centering
+		\makebox[\linewidth]{
+			\includegraphics[width=\textwidth]{images/gui_main_data}}
+		\caption{Überblick über die vordefinierten Klassen}
+		\label{gui_main_data}
+	\end{minipage}
+\end{figure}
+
+Diese Informationen ermöglichen es zu prüfen, ob die vordefinierten Kategorien entsprechend der Planung durch die Konfigurationsdateien erstellt wurden und liefern einen Einblick in die dahinterliegenden Datenstrukturen.
+\newpage
+\section{Benutzung der entwickelten Software}
+
+In diesem Kapitel wird erläutert, wie die erstellte Software zu starten ist und welche Rahmenbedingungen dafür erfüllt sein müssen.
+
+\subsection{Voraussetzungen}
+
+Um das erstellte Programm nutzen zu können muss die Entwicklungsumgebung \textit{LispWorks} mit Versionsnummer 6.+ installiert sein, sowie eine Internetverbindung vorhanden sein.
+Mit älteren \textit{LispWorks}-Versionen ist die Programmausführung nicht möglich und mit Versionen ab Nummer 7.0 ist die Anwendung nicht getestet und es ist nicht garantiert, dass alle Funktionen fehlerfrei arbeiten.
+Um das Programm in vollen Umfang nutzen zu können bietet sich die sogenannte \textit{Professional}-Version and, da diese keine Speicher-Begrenzung hat. Dies tritt bei der kostenfreien \textit{Personal}-Edition auf und kann zu Programmabstürzen führen, da \textit{LispWorks} automatisch beendet wird wenn eine gewisse Speichergrenze überschritten wird, was bei einer größeren Menge an Trainingsdaten passiert.
+In diesem Fall ist es nötig mit einer kleineren Testmenge zu arbeiten, eine Anleitung dafür ist in der im folgenden Kapitel beschriebenen Setup-Datei hinterlegt.
+
+\subsection{Programmstart}
+
+Um die Anwendung zu starten muss die im \textit{src}-Ordner befindliche Datei \textit{setup.lisp} mit \textit{LispWorks} geöffnet werden.
+Wird der Inhalt dieser Datei evaluiert öffnet sich die im Kapitel \ref{chap-gui} beschriebene graphische Benutzeroberfläche.
+Sollte dies nicht der Fall sein, so sind in der Datei Kommentare hinterlegt, die dabei helfen das Programm erfolgreich zu starten.
+
+Der Programmstart kann einige Minuten in Anspruch nehmen, da der gesamte Klassifikationskorpus erstellt werden muss. Die dafür verantwortliche Codestelle ist folgende:
+\begin{figure}[h!]
+\begin{lstlisting}
+(data:build-classificator (current-pathname "../data/categories" "txt") 
+						(current-pathname "../data/structure" "txt") 
+					  (list (current-pathname "../data/new-data" "txt")))
+\end{lstlisting}
+\caption{Funktion die den Klassifikationskorpus erstellt}
+\label{build-class}
+\end{figure}
+
+Um einen kürzeren Programmstart zu ermöglichen kann die in Zeile 3 (Abbildung \ref{build-class}) angegebene Trainingsdatei "`../data/new-data"' durch "`../data/spiegel-data"' ersetzt werden. Dies kann die Startzeit halbieren, sorgt allerdings auch für eine ungenauere Klassifikation.
+
+Wird dies getan, muss der in Kapitel \ref{sec:doc-class} erwähnte Schwellwert zur Klassifikation angepasst werden, da dieser von der Länge der Trainingsdaten abhängig ist.
+Dies wird in der Setupdatei mithilfe der Konstante \textit{*classification-value*} getan. Dieser muss ein Wert zwischen -1 und 0 zugewiesen werden. In der Setup-Datei befinden sich mehrere mögliche Einstellungen dieser Konstante, die für die beigefügten Trainingsdaten relativ gut gewählt wurden.

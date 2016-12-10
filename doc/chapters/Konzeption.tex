@@ -1,0 +1,422 @@
+\chapter{Konzeption}\label{Konzeption}
+
+Damit Nachrichtenartikel korrekt klassifiziert werden können, sind mehrere Schritte notwendig, welche in diesem Kapitel behandelt und detailliert beschrieben werden.
+
+Die erste Schwierigkeit ist das Einlesen von Artikeln per HTML-Link und die Bereitstellung dieser Daten für die weiteren Programmteile.
+Wenn dieser Schritt erledigt ist, muss der eingelesene Text analysiert und aufgrund dieser Analyse in eine Kategorie eingeordnet werden.
+
+\section{Einlesen der Nachrichtenartikel}
+
+%Cataract: Musst du für jede Webseite jetzt selber konfigurieren oder macht der das jetzt automatisch
+%Cataract: das hab ich nicht verstanden
+
+Das Einlesen von Online-Nachrichtenartikeln besteht aus drei Schritten: Zu Beginn wird mithilfe eines sogenannten Webfetchers der HTML-Inhalt des angegebenen Links ausgelesen.
+Im zweiten Schritt wird dieser als String vorliegende Inhalt mithilfe eines HTML-Parsers ausgelesen. Die dadurch gewonnenen Daten liegen in einer Lisp-typischen Listen-Darstellung vor und können somit mit allen vorhandenen Mitteln traversiert werden.
+Um nun den gewünschten Text aus der so verarbeiteten Seite auszulesen muss die individuelle Struktur der verschiedenen verwendeten Nachrichtenportale berücksichtigt werden.
+Dies stellt gleichzeitig eine Einschränkung der zu entwickelnden Anwendung dar, da für jedes gewünschte Nachrichtenportal die verwendete HTML-Struktur analysiert und entsprechend ausgelesen werden muss.
+Um dies zu ermöglichen, wird ein einfacher Algorithmus entwickelt, der eine hinterlegte Strukturliste sowie den geparsten HTML-Inhalt der Webseite als Eingaben erhält und mithilfe dieser die gewünschten Textteile in einem einheitlichen (Listen-) Format zurückgibt.
+Damit wird die beschriebene Einschränkung durch eine Konfigurierbarkeit der Anwendung verlagert.
+
+
+\section{Klassifikation der Artikel}
+
+Die Klassifikation der Artikel kann als Dokumentenklassifikation realisiert werden, welche ein bekanntes Problem aus dem Bereich des Data- beziehungsweise Text-Mining, darstellt.
+Um dieses Problem zu lösen ist zunächst eine formale Definition des Problems nötig, um Lösungsalgorithmen verstehen und anwenden zu können.
+Desweiteren ist es notwendig einen Algorithmus zu finden, der möglichst einfach funktioniert, aber dennoch eine hohe Klassifikationsgenauigkeit ermöglicht.
+
+\subsection{Formale Definition}
+
+In dem Werk \textit{Introduction to Information Retrieval} der Autoren Christopher D. Manning, Prabhakar Raghavan und Hinrich Schütze, wird das Textklassifikationsproblem folgendermaßen beschrieben:\\
+Bei der Dokumentenklassifikation soll einem Dokument $d \in X$, wobei $X$ den sogenannten Dokumentenraum beschreibt, einer Klasse $c_1$ aus einer festen Menge an sogenannten Klassen $C = \{ c_{1}, c_{2}, ... , c_{n}\}$, die typischer von Menschen definiert werden, zugerordnet werden.
+
+Diese vordefinierten Klassen werden aus einer Trainings-Menge $D$ gewonnen, die aus Tupeln $\left\langle d, c \right\rangle \in X \times C$ besteht.
+Mithilfe eines lernenden Algorithmus ist eine Klassifizierungsfunktion 
+
+\begin{equation}
+	\gamma: X \rightarrow  C 
+\end{equation}
+gesucht, die jedem Dokument eine eindeutige Klasse zuordnet.\footnote{\cite[Vgl. Kapitel 13.1  \textit{The text classification problem}]{Manning:08}}
+%Quelle: http://nlp.stanford.edu/IR-book/html/htmledition/the-text-classification-problem-1.html
+
+Diese Methode des Lernens wird auch überwachtes Lernen genannt, da das zu erlerndende Ergebnis mithilfe der vordefinierten Trainings-Menge abgeglichen wird. 
+
+\subsection{Bag-of-Words-Modell}
+
+Im vorherigen Unterkapitel wurde beschrieben wie die Nachrichtentexte eingelesen werden. Für die Klassifikation sind diverse Vorberechnungen sinnvoll, zum Beispiel das Zählen der Worthäufigkeit. Die Ergebnisse dieser Berechnungen können dann mit dem ausgewählten Klassifikator ausgewertet und gewichtet werden.
+
+Zum Ermitteln der Worthäufigkeiten wird das sogenannte \textit{Bag-of-Words-Modell} angewendet. Dieses betrachtet Texte als Mengen von Wörtern, die keinerlei Struktur oder Grammatik aufweisen. Dies ist ein gängiges Verfahren in der Textklassifikation und obwohl die grammatikalischen Informationen verloren gehen, erzeugt dieses Modell eine Vereinfachung der Texte, die die weitere Verarbeitung erheblich beeinflusst, indem nur noch eine bestimmte Menge an Wörtern gespeichert werden muss. Strukturrelle und grammatikalische Informationen werden nicht gespeichert und somit wird auch weniger Speicherplatz benötigt. So könnte beispielsweise der Satz "`Ich genieße den Tag, während ich auf meinem Sessel sitze."' als die Liste 
+\begin{lstlisting}
+(ich 
+genieße 
+den 
+Tag 
+während 
+auf 
+meinem 
+Sessel 
+sitze)
+\end{lstlisting}
+dargestellt werden. Hierbei ist zu bemerken, dass alle Satzzeichen entfernt werden und doppelte Wörter nur einmalig vorkommen.\\
+
+Es mag kontraintuitiv erscheinen, allerdings ist der Verlust dieser weiteren Informationen für die Textklassifikation vernachlässigbar und beeinflusst die Klassifikationsgenauigkeit kaum.
+
+Dies wird in der Diplom-Arbeit von Andreas Kaster \textit{Automatische Dokumentklassifikation mittels linguistischer und stilistischer Features} gezeigt:  
+\begin{quote}
+"`Bei themenbasierten Klassifikationsproblemen (repräsentiert durch 20-
+Newsgroups) und der Klassifikation von Meinungen (Movie-Review-Korpus)
+bewegte sich der durchschnittliche Klassifikationsfehler mit alternativen Features,
+wie z.B. der Satzbauanalyse oder statistischen Satzlängenverteilungen,
+bei ca. 50\%. Die Klassifikationsergebnisse waren also fast wie zufällig.
+Offensichtlich waren unsere alternativen Features nicht diskriminativ für
+diese Klassifikationsprobleme. Es besteht also keine oder nur eine geringe
+Korrelation zwischen stilistischen Merkmalen und den Klassifikationsthemen.
+Daher konnte auch die Einführung von Kombinationsstrategien die Klassifikationsergebnisse
+nicht wesentlich verbessern. Das Bag-of-Words-Modell ging
+bei unseren Experimenten als klarer Sieger hervor."'\footnote{\cite[S. 65]{Kaster:05}}
+\end{quote}
+\subsection{Algorithmen}\label{algorithm}
+
+Für die im vorherigen Abschnitt beschriebene Klassifizierungsfrage gibt es eine Reihe von Klassifikationsverfahren, von denen in diesem Kapitel drei vorgestellt werden. %der in dieser Projektarbeit eingesetzte vorgestellt wird.
+Dies stellt nur eine kleine Auswahl der tatsächlich vorhandenen Algorithmen, die zum Klassifizieren genutzt werden dar, allerdings sind dies Algorithmen, die eine relativ weite Verbreitung haben.
+
+\subsubsection{Naiver Bayes-Klassifikator}
+
+Der Naive Bayes-Klassifikator wird aus dem Satz von Bayes hergeleitet. Dieser beschreibt die Berechnung von bedingten Wahrscheinlichkeiten.
+
+Seien $A$ und $B$ zwei Ereignisse wobei die Wahrscheinlichkeit $P(B) > 0$, so lässt sich die bedingte Wahrscheinlichkeit, dass $A$ eintritt folgendermaßen berechnen:
+\begin{equation}
+P(A|B) = \frac{P(B|A) \cdot P(A)}{P(B)}
+\end{equation}
+
+Dieser Satz wird bei endlich vielen Ereignissen $A_i,\, ...,\, A_n$ folgendermaßen angepasst:
+\begin{equation}
+P(A_i|B) = \frac{P(B|A_i) \cdot P(A_i)}{P(B)} = \frac{P(B|A_i) \cdot P(A_i)}{\sum\limits_{j=1}^n P(B|A_j) \cdot P(A_j)}
+\end{equation}
+
+Bei der Klassifikation von Texten wird die namensgebende naive Annahme gestellt, das jedes zu einer Klasse gehörige Wort gleichermaßen aussagekräftig bezüglich der Zuordnung ist. 
+Trotz dieser starken Vereinfachung liefert der Bayes-Klassifikator in der Regel gute Ergebnisse.
+\newline
+Für die Klassifikation von Texten wird dieser Satz folgendermaßen angepasst:
+\begin{equation}
+	P(C|w) = \frac{P(w|C) \cdot P(C)}{P(w)}
+\end{equation}
+Hierbei gibt $P(w|C)$ die Wahrscheinlichkeit an mit der Wörter aus Dokument $w$ zu der Klasse $C$ gehören, $P(C)$ die Wahrscheinlichkeit mit der die Dokumentenklasse $C$ auftritt und $P(w)$ die Wahrscheinlichkeit mit der das Wort $w$ auftritt. 
+Dabei ist zu bedenken, dass die Wahrscheinlichkeit der Klasse $P(C)$ von ihrem Vorkommen in den Trainingsdaten abhängig ist.
+
+Die Wahrscheinlichkeit, dass ein Wort $w_i$ mit einer Klasse $C$ assoziiert ist, berechnet sich folgendermaßen:
+\begin{equation}
+	P(w_i|C) = \frac{\textnormal{Anzahl der Dokumente aus Klasse } C \textnormal{ mit dem Wort } w_I}{\textnormal{Anzahl aller Dokumente ohne } C}
+\end{equation}
+
+Um nun einen Text einer Klasse $\hat{y}$ zuzordnen wird folgende Gleichung verwendet:
+\begin{equation}
+\hat{y} = arg \, \underset{k}{max} \, P(C_k) \prod\limits_{i=1}^{n} P(w_i|C_k)
+\end{equation}
+
+Dabei wird die Klassenzugehörigkeit durch das Maximum der multiplizierten Wortwahrscheinlichkeiten bezüglich aller Klassen $C$ berechnet.
+Das bedeutet $\hat{y}$ ist die Klasse unter der das Produkt der einzelnen Wahrscheinlichkeiten aller Wörter $w_i$ eines Dokumentes im Vergleich zu allen anderen Klassen am größten ist.
+\subsubsection{Support Vector Machine}
+
+Eine Support Vector Machine ist ein \textit{unüberwachtes} Klassifikationsverfahren, welches die zu klassifizierenden Dokumente als Vektor in einem Vektorraum darstellt. Die Aufteilung in Klassen wird durch sogenannte Hyperebenen durchgeführt, die einer Trennfläche zwischen Klassen entsprechen. Dabei ist der Abstand der Trennfläche zu Objekten in den Klassen größtmöglich. Dadurch soll eine möglichst genaue Klassifizierung gewährleistet werden.
+
+Ein Vorteil der Support Vector Machine ist es, dass nicht zwangsweise alle Trainingsdaten betrachtet werden müssen.
+Da diese Dokumente mit Vektoren beschrieben werden, können Vektoren, die näher an der vorhin beschriebenen Trennfläche liegen andere Vektoren "`verdecken"'. Die durch die Hyperebene aufgespannte Trennfläche ist somit nur von eben jenen Vektoren abhängig, deren Distanz zu ihr im Vergleich zu anderen Vektoren der Klasse am geringsten ist.
+
+Eine solche Klassifizierung unterliegt allerdings der Einschränkung, dass nur linear trennbare Klassen darstellbar sind, Trainingsdaten in der Regel aber nicht linear trennbar sind. Abhilfe schafft der sogenannte \textit{Kernel-Trick}. 
+Dabei werden die Vektoren in einen höherdimensionalen Raum überführt. Wenn diese Dimension groß genug gewählt wird, können damit die Trainingsdaten linear getrennt werden.
+Dies ist allerdings eine sehr rechenlastige Operation.
+
+\subsubsection{Nächste-Nachbarn-Klassifikation}
+
+Die Nächste-Nachbarn-Klassifikation, im Englischen auch \textit{k-nearest neighbors algorithm} genannt, ist ein Clustering-Algorithmus, der in der Mustererkennung, worunter auch die Text-Klassifikation fällt, verwendet wird. 
+Es ist ein lernender Algorithmus, der im Vergleich zu Naive-Bayes allerdings unüberwacht stattfindet. Das heißt, es ist nicht notwending Klassen vorzudefinieren.
+
+Bei diesem Clustering wird versucht alle Dokumente die sich ähneln möglichst in einen Cluster einzuordnen. Diese Cluster müssen sich größtmöglich voneinander unterscheiden.
+
+%Der Algorithmus nutzt Abstandsmaße wie den Euklidische Abstand um eine Klassenzugehörigkeit zu bestimmen, dabei gibt ein Wert $k$ an mit wievielen Nachbarn
+\subsection{Auswahl}
+
+Da \textit{Naive-Bayes} ein leicht zu implementierender Algorithmus ist, wurde er für diese Arbeit ausgewählt. Desweitern gibt es eine Arbeit die einige Probleme dieses Algorithmus beseitigt und eine recht einfache Erweiterung vorschlägt. Darauf wird im kommenden Kapitel eingegangen.
+\textit{Support Vector Machines} arbeiten mit mathematisch komplexen Konzepten und Operationen und dennoch sind deren Ergebnisse nicht zwangsläufig besser als die  mit \textit{Naive-Bayes} erreichten.
+Die \textit{Nächste-Nachbarn-Klassifikation} arbeitet mit unüberwachten Lernen, ist somit nicht einfach konfigurierbar und wird aus diesem Grund nicht ausgewählt.\\
+
+%vll noch etwas ausführlicher?
+Durch diese Auswahl ist es möglich schon frühzeitig einen Klassifikationsalgorithmus zu implementieren, der im Verlauf der Arbeit verbessert und weiterentwickelt werden kann.
+Dies hat den Vorteil, dass einzelne Komponenten des Programms schon in einer frühen Projektphase zusammengefügt und getestet werden können. Auch können potenzielle Schwierigkeiten im Vorhinein abgesehen werden und somit kann die Planung beziehungsweise Durchführung entsprechend angepasst werden.
+
+
+\newpage
+\section{Erweiterterter Naive-Bayes}\label{chap-ext-bayes}
+
+In diesem Unterkapitel wird eine auf dem Naive-Bayes-Klassifikator basierende Erweiterung und Verbesserung beschrieben, die in dieser Arbeit umgesetzt wurde.
+Hierfür werden zu Beginn einige Berechnungen und Gleichungen vorgestellt, die in dieser Erweiterung verwendet werden.
+
+\subsection{Term Frequency-Inverse Document Frequency}\label{tf-idf}
+
+Die sogennante \textit{Term Frequency-Inverse Document Frequency}, kurz \textit{tf-idf}, ist ein weiteres Bewertungsmaß aus dem Gebiet der Information Retrieval. Sie ist eine numerische Statistik, die zeigt wie wichtig ein Wort im Bezug zu einem Dokument oder einer Dokumentensammlung ist. 
+Dies wird als Gewichtungsfaktor in Text-Mining Algorithmen verwendet und kann mit dem Naive Bayes-Klassifikator kombiniert werden.
+\linebreak
+
+Die \textit{tf-idf} besteht aus den zwei namensgebenden Teilen \textit{Term Frequency} und 
+\textit{Inverse Document Frequency}.
+\linebreak
+
+\subsubsection{Term Frequency}
+\textit{Term Frequency} ist eine einfache Aufzählung der Vorkommnisse $d_{ij}$ eines Wortes $w_i$ in einem Dokument $D$. 
+Da es verschiedene Varianten dieser Gewichtung gibt, müssen einige Fälle unterschieden werden:
+%zahlen einbringen?
+\begin{table}
+\centering
+\begin{tabular}{|p{3cm}|p{5cm}|p{7cm}|ll}
+\cline{1-3}
+Art & Berechnung & Beschreibung &  &  \\ \cline{1-3}
+binär & 1,0 & Wertung 1, wenn das Wort im Dokument enthalten ist, sonst 0 &  &  \\ \cline{1-3}
+einfache Häufigkeit & $d_{ij}$ & Abzählen der Häufigkeit von $w_i$ in $d$ &  &  \\ \cline{1-3}
+logarithmisch & $1 + log(d_{ij})$ & Der Logarithmus der einfachen Häufigkeit &  &  \\ \cline{1-3}
+doppelt normalisiert & $K + (1 - K) \frac{d_{ij}}{max_{\{d_{in} \in di}\}  d_{in}}$, \linebreak mit z.B.: $K = 0.5$ & Die einfache Häufigkeit wird durch die größte Häufigkeit in $d$ geteilt. Dies macht sehr lange und sehr kurze Dokumente besser vergleichbar &  &  \\ \cline{1-3}
+\end{tabular}
+\caption{Verschiedene Möglichkeiten die \textit{Term Frequency} zu berechnen.}
+\label{tf-idf-table}
+\end{table}
+
+\subsubsection{Inverse Document Frequency}
+\textit{Inverse Document Frequency} ist ein Maß darüber wie informativ ein Wort ist. Dies wird erreicht, indem ein Verhältnis über die Anzahl der Dokumente und der Anzahl der Dokumente, die das Wort $w_i$ enthalten, berechnet.\\
+
+Wie auch schon bei der \textit{Term Frequency} gibt es einige Möglichkeiten die \textit{Inverse Document Frequency} zu berechnen, von denen einige in Abbildung \ref{tf-idf-table2} aufgelistet werden.
+
+\begin{table}
+\centering
+\begin{tabular}{|p{3cm}|p{5cm}|p{7cm}|ll}
+\cline{1-3}
+Art & Berechnung & Beschreibung &  &  \\ \cline{1-3}
+unär & 1 & Keine inverse Gewichtung &  &  \\ \cline{1-3}
+einfach & $log \frac{\sum_k 1}{\sum_{i \in d}}$ & Die Anzahl aller Dokumente durch die Anzahl derer in denen das Wort $w_i$ vorkommt. &  &  \\ \cline{1-3}
+geglättet & $log (1 + \frac{\sum_k 1}{\sum_{i \in d}})$ & Wie einfach, mit Glättungsparameter &  &  \\ \cline{1-3}
+\end{tabular}
+\caption{Verschiedene Möglichkeiten die \textit{Inverse Document Frequency} zu berechnen.}
+\label{tf-idf-table2}
+\end{table}
+
+$\sum_{i \in d}$ ist hierbei die Summe aller Dokumente $d$ in denen das Wort $w_i$ auftaucht.
+%wieder eine tabelle einfügen?
+
+\subsubsection{Berechnung von tf-idf}
+
+Die Berechnung von \textit{tf-idf} ist die Multiplikation der \textit{Term Frequency} und der \textit{Inverse Document Frequency}.\\
+Somit könnte ein \textit{tf-idf}-Wert $delta$ zum Beispiel mit folgender Formel berechnet werden:
+\begin{equation}
+	\delta = log (d_{ij} + 1) * log(\frac{\sum_k 1}{\sum_{i \in d}})
+\end{equation}
+
+\newpage
+\subsection{Längen-Normalisierung}\label{length-norm}
+
+%Normalisierung beschreiben...
+Wie schon im Kapitel \ref{tf-idf} beschrieben, kann die Gewichtung einzelner Wörter bezüglich ihrer Klassenzugehörigkeit normalisiert werden. Das ermöglicht eine höhere Vergleichbarkeit von Texten unterschiedlicher Länge.
+Ermöglicht wird dies, indem Wörter eines längeren Textes verhältnismäßig geringer gewichtet werden als Wörter aus kürzeren Texten.
+
+Sei $f_i$ die Häufigkeit eines Wortes in einem Dokument, dann lässt sich die normalisierte Häufigkeit folgendermaßen berechnen:
+
+\begin{equation}
+f^{'}_{i} = \frac{f_i}{\sqrt{\sum_{k}(f_k)^2}}
+\end{equation}
+Hierbei ist $sum_{k}(f_k)^2$ die Summe aller Worthäufigkeiten aller Dokumentenklassen $K$.
+
+Auch wenn die Textlängenunterschiede bei verschiedenen Online-Nachrichtenartikeln eher gering ausfallen, wird die oben beschriebene Normalisierungsberechnung im verwendeten Algorithmus implementiert. Somit ist sichergestellt, dass die Textlänge für die Klassifikationsgenauigkeit keine Veränderung bewirkt.
+
+\subsection{Klassen-Komplement}\label{class-complement}
+
+In Kapitel 3.1 des Artikels \textit{Tackling the Poor Assumptions of Naive Bayes Text Classifiers}\footnote{\cite{Rennie:03}} der Autoren Jason D. M. Rennie, Lawrence Shih, Jaime Teevan und David R. Karger aus dem Jahre 2003 wird ein weiteres Problem der Klassifizierungsgenauigkeit beschrieben.
+Je nach verwendeten Trainingsdaten kann es vorkommen, dass der Bayes-Klassifikator bestimmte Klassen anderen unbeabsichtigt vorzieht und die Klassifikationsgenauigkeit darunter leidet. Um dieses Problem zu beseitigen, schlagen die Autoren vor die Gewichtung einer Klasse nicht nur über die ihr zugehörigen Dokumente zu definieren, sondern über das sogenannte Komplement der Klasse.
+
+Dies berechnet anstatt wie im unmodifizierten Algorithmus, nicht die zugehörigkeit eines Dokumentes $d$ zu einer Klasse $c$, sondern die Nichtzugehörigkeit von $d$ bezüglich aller anderen Klassen.
+Dies wird mit folgender Gleichung beschrieben:
+\begin{equation}
+\hat{\theta}_{\bar{c}i} = \frac{N_{\bar{c}i} + \alpha_i}{N_{\bar{c}} + \alpha}
+\end{equation}
+Hierbei ist $N_{\bar{c}i}$ die Anzahl der Vorkommnisse des Wortes $i$ in allen Klassen außer $c$ und $N_{\bar{c}}$ die Gesamtzahl aller Wörter in den Klassen ohne $c$. $\alpha_i$ und $\alpha$ sind Glättungsparameter.
+
+%Glättung einbringen?
+\newpage
+\subsection{Gewichtungs-Normalisierung}\label{weight-norm}
+
+Ähnlich wie im vorherigen Kapitel beschrieben, gibt es bei der Gewichtung das Problem einzelne Klassen anderen vorzuziehen, beispielsweise wenn die Trainingsdaten nicht ausgewogen genug sind.
+
+Bei der Gewichtung kann es vorkommen, dass die Gewichte einer Klasse größer sind als die anderer Klassen. Dies tritt vorallem im Vergleich von kleineren Klassen auf, da die Gewichte einer Klasse immer zu 1 addiert werden können. Um dieses Problem zu beheben, können die Gewichte aller Klassen normalisiert werden.
+
+Dies wird mit folgender Gleichung beschrieben:
+\begin{equation}
+\hat{w}_{ci} = \frac{w_{ci}}{\sum_i w_{ci}}
+\end{equation}
+
+
+Hierbei ist $w_ci$ die normale Gewichtung eines Wortes $i$ aus der Klasse $c$. Die Normalisierung $\hat{w}_{ci}$ wird durch das Teilen durch die Summe aller Gewichte der Klasse $c$ berechnet.
+
+\newpage
+\subsection{Transformed Weight-normalized Complement Naive Bayes}\label{TWCNB}
+
+
+%http://machinelearning.wustl.edu/mlpapers/paper_files/icml2003_RennieSTK03.pdf
+In dem Artikel \textit{Tackling the Poor Assumptions of Naive Bayes Text Classifiers} %der Autoren Jason D. M. Rennie, Lawrence Shih, Jaime Teevan und David R. Karger aus dem Jahre 2003 
+wird beschrieben, dass obwohl Naive Bayes ein häufig verwendeter Klassifikator ist, dies vorallem seiner Einfachheit und anstatt seiner Genauigkeit geschuldet ist. Doch weiter wird ausgeführt, dass weniger fehlerhafte Ergebnisse nur mit weitaus langsameren und komplexeren Algorithmen zu erzielen seien, sodass sich die Autoren diesem Problem angenommen haben und eine signifikante Verbesserung der Klassifikationsergebnisse erreichen konnten.\footnote{\cite[Vgl.: Kapitel 1 und Kapitel 4.4]{Rennie:03}}
+
+Der von den Autoren verbesserte Algorithmus ist folgendermaßen beschrieben\footnote{\cite[Vgl.: Kapitel 4.4]{Rennie:03}}:
+\begin{figure}
+\begin{itemize}
+	\item Sei $\vec{d} = (\vec{d_1},...,\vec{d_n})$ eine Menge von Dokumenten; $d_{ij}$ ist die Häufigkeit von Wort $i$ in Dokument $d_j$.
+	\item Seien $\vec{y} = (\vec{y_1},...,\vec{y_n})$ die Dokumentenklassen.
+	\item $TWCNB(\vec{d}\vec{y})$
+	\begin{enumerate}
+		\item $d_{ij} = log(d_{ij} + 1)$ (Logarithmische Häufigkeit)
+		\item $d_{ij} = d_{ij} \, log \frac{\sum_{k}1}{\sum_{k}\delta_{ik}}$ (\textit{tf-idf}-Maß siehe Kapitel \ref{tf-idf}
+		\item $d_{ij} = \frac{d_ij}{\sqrt{\sum_{k}(d_kj)^2}}$ (Längen Normalisierung Kapitel \ref{length-norm})
+		\item $\hat{\theta} = \frac{\sum_{j:y_j \neq c}d_{ij} + \alpha_i}{\sum_{j:y_j \neq c}\sum_k d_{kj}+\alpha}$ (Klassen Komplement Kapitel \ref{class-complement})
+		\item $w_{ci} = log \hat{\theta}_{ci}$
+		\item $w_{ci} = \frac{w_{ci}}{\sum_i |w_{ci}|}$ (Gewichtungs Normalisierung Kapitel \ref{weight-norm})
+		\item Sei $t = (t_1, ..., t_n)$ ein Testdokument; sei $t_i$ die Worthäufigkeit des Wortes $i$.
+		\item Klassifiziere das Dokument nach 
+		\begin{equation} l(t) = arg \, \underset{c}{min} \sum_i t_i w_{ci} \end{equation}
+	\end{enumerate}
+\end{itemize}
+\label{TWCNB_algo}
+%\caption{Erweitereter Naive Bayes Algorithmus }%\footnote{\cite[Vgl.: Kapitel 4.4]{Rennie:03}}}
+\end{figure}
+
+In den ersten drei Schritten wird die \textit{tf-idf} Gewichtung von $d_{ij}$ berechnet und normalisiert. Nachdem dies durchgeführt wurde, liegt für das Dokument $d$ eine prinzipiell nutzbare Gewichtung vor. 
+Aufgrund der im Artikel beschriebenen Ungenauigkeiten dieser Berechnung bezüglich anderer Klassen wird aus dieser Gewichtung im vierten Schritt das Komplement der Klasse $d$ berechnet. Dieses enthält, wie im Kapitel \ref{class-complement} beschrieben, die Gewichtung aller Wörter in Dokumenten ohne $d$.
+Daraufhin wird im fünften Schritt das Komplementgewicht $w_{ci}$ mithilfe des Logarithmus bestimmt. 
+Die daraus resultierenden Gewichte werden im 6ten Schritt noch einmal normalisiert, was den Hintergedanken hat, dass Gewichte bestimmter Wörter Tendenzen zu einer bestimmten Klasse $c$ aufweisen und dadurch eine Bevorzugung dieser Klasse bewirken könnten.
+
+Nach diesem Schritt ist die Berechnung der Klassengewichtung abgeschlossen.
+
+In den Schritten 7 und 8 wird beschrieben wie einem Dokument $t$ eine Klasse zugeordnet wird.
+
+Dies geschieht nicht wie im klassischen \textit{Naive-Bayes-Klassifikator} über eine Maximum-Funktion, sondern über eine Minimum-Funktion, da die durch den erweitereten Algorithmus errechneten Gewichte negativ sind.
+
+Damit ist die größte Zugehörigkeit zu einer Klasse durch einen signifikant kleineren Wert ersichtlich.\\
+
+Die durch diesen Algorithmus gewonnenen gewichteten Klassen werden zusammengefasst auch als \textit{Dokumenten-} oder \textit{Klassifikations- Korpus} bezeichnet.
+\newline
+
+\newpage
+\subsection{Beispielrechnung von Transformed Weight-normalized Complement Naive Bayes}
+Seien $y_1, \, y_2$ zwei Dokumentenklassen und $d_1 \in y_1, \, d_2 \in y_2$ zwei Dokumente mit  $d_1 = (Dies\, ist\, ein\, erstes\, Beispiel)$ und $d_2 = (Dies\, ist\, ein\, zweites\, Beispiel)$.
+
+Um aus diesen Klassen die entsprechenden Gewichtungen zu berechnen müssen die Komplemente $\hat{\theta}_1, \hat{\theta}_2$ berechnet werden. Da jedes Wort nur einmal per Dokument auftaucht ist deren logarithmische Häufigkeit $d_{ij} \approx 0,3$ ist und die inverse Häufigkeit für alle Wörter, außer "`erstes"' und "`zweites"', ist $idf \approx 0,3$ . Für diese beiden ist die inverse Häufigkeit $idf \approx 0,22$.
+
+Die \textit{tf-idf}-Maße für alle Wörter sind folgende:
+\begin{equation}
+\begin{aligned}
+\delta_{Dies} = \delta_{ist} = \delta_{ein} = \delta_{Beispiel} \approx 0,09\\\nonumber
+\delta_{erste} = \delta_{zweites} \approx 0,066\nonumber%0,144\nonumber
+\end{aligned}
+\end{equation}
+
+Im nächsten Schritt müssen diese Werte normalisiert werden. Die Summe $\sqrt{\sum_{k}(d_kj)^2}$ berechnet sich dann folgendermaßen:
+\begin{equation}
+\sqrt{\sum_{k}(d_kj)^2} \approx \sqrt{0,09^2 + 0,09^2 + ... + 0,066^2 + 0,066^2} \approx \sqrt{0,073512} \approx 0,271\nonumber%\sqrt{0,09^2 + 0,09^2 + ... + 0,144^2 + 0,144^2} \approx \sqrt{0.106272} \approx 0,326\nonumber
+\end{equation}
+
+Die normalisierten Werte sind dann:
+\begin{equation}
+\begin{aligned}
+\delta_{Dies} = \delta_{ist} = \delta_{ein} = \delta_{Beispiel} \approx 0,09 / 0,271 \approx 0,33 \nonumber \\%\approx 0,09 / 0,326 \approx 0,28 \nonumber \\
+\delta_{erste} = \delta_{zweites} \approx 0,066 / 0,271 \approx 0,244\nonumber%0,144 / 0,326 \approx 0,44\nonumber
+\end{aligned}
+\end{equation}
+
+Mithilfe diesen Berechnungen lassen sich die Komplementklassen $\hat{\theta}_1, \hat{\theta}_2$ mithilfe der im vierten Schritt angegebenen Gleichung berechnen:
+\begin{equation}
+\hat{\theta}_{1erstes} =  \frac{\sum_{j:y_j \neq c}d_{ij} + \alpha_i}{\sum_{j:y_j \neq c}\sum_k d_{kj}+\alpha}= \frac{\alpha_i}{\delta_{Dies} + \delta_{ist} + \delta_{ein} +\delta_{Beispiel} + \delta_{zweites} + \alpha} = \frac{1}{11,56} \approx 0.087 \nonumber 
+\end{equation}
+Dabei muss der Komplementwert für jedes Wort der Klasse einzeln berechnet werden.
+\begin{equation}
+%\begin{aligned}
+\hat{\theta}_{1dies} = \frac{\sum_{j:y_j \neq c}d_{ij} + \alpha_i}{\sum_{j:y_j \neq c}\sum_k d_{kj}+\alpha} = \frac{\delta_{Dies} + \alpha_i}{\delta_{Dies} + \delta_{ist} + \delta_{ein} +\delta_{Beispiel} + \delta_{zweites} + \alpha} = \frac{1,33}{11,56} \approx 0,12\nonumber
+\end{equation}
+\begin{equation}
+\begin{aligned}
+\hat{\theta}_{1dies}& = \hat{\theta}_{2dies}& \approx 0,12 \nonumber\\
+\hat{\theta}_{1ist}& = \hat{\theta}_{2ist}& \approx 0,12 \nonumber\\
+\hat{\theta}_{1Beispiel}& = \hat{\theta}_{2Beispiel}& \approx 0,12 \nonumber\\
+\hat{\theta}_{2zweites}& \approx 0,087 \nonumber\\
+\end{aligned}
+\end{equation}
+Hierbei wurden $\alpha_i$ ist hierbei 1 und $\alpha$ ist die Anzahl aller Wörter, in diesem Fall 10.
+Die errechneten $\theta_ci$ der Klassen ergeben die Gewichtungen mit denen die Klassenzugehörigkeit eines Dokumentes berechnet werden kann. 
+%Nun muss lediglich der Logarithmus dieser Werte berechnet werden (siehe Schritt 5) und dann werden diese Gewichte normalisiert (Schritt 6).
+In den letzten beiden Schritten (Schritt 5 und 6), werden diese Werte logarithmiert und normalisiert.
+Daraus resultieren folgende Gewichte für die Klassen $y_1$ und $y_2$:
+\begin{equation}
+\begin{aligned}
+w_{1dies}& = w_{2dies}& \approx \frac{-0.92}{3,74} \approx -0,245 \nonumber\\
+w_{1ist}& = w_{2ist}& \approx \frac{-0.92}{3,74} \approx -0,245 \nonumber\\
+w_{1ein}& = w_{2ein}& \approx \frac{-0.92}{3,74} \approx -0,245 \nonumber\\
+w_{1Beispiel}& = w_{2Beispiel}& \approx \frac{-0.92}{3,74} \approx -0,245 \nonumber\\
+w_{1erstes}& = w_{2zweites}& \approx \frac{-0.06}{3,74} \approx -0,016\nonumber\\
+\end{aligned}
+\end{equation}
+Dabei ist zu beachten, dass die Werte für $w_{1zweites}$ und $w_{2erstes}$ beide 0 sind, da diese nur in den Klassen $y_1$ beziehungsweise $y_2$ vorkommen.\\
+
+Wenn diese errechneten Gewichte auf die Dokumente der Klassen $y_1$ und $y_2$ angewendet werden werden die Dokumente $d_1$ und $d_2$ den entsprechenden Kategorien zugewiesen.
+Dies wird durch die Minimum Funktion im letzten Schritt der Gleichung \ref{TWCNB_algo} beschrieben, in diesem Fall sind die Testdokumente $t_1 = d_1$ und $t_2 = d_2$.
+\begin{equation}
+l(t_1) = arg \, \underset{c}{min} \sum_i t_i w_{ci} \nonumber
+\end{equation}
+Die Zuweisung von $d_1$ zu der Klasse $y_1$ berechnet sich mithilfe der Gewichte wie folgt: 
+\begin{equation}
+w_{t_{1}y_{1}} = w_{1dies} \cdot 1 + w_{1ist} \cdot 1 + w_{1ein} \cdot 1 + w_{1erstes} \cdot 1 + w_{1Beispiel} \cdot 1 \approx -0,996 \nonumber
+\end{equation}
+und für die Klasse $y_2$ mit
+\begin{equation}
+w_{t_{1}y_{2}} = w_{2dies} \cdot 1 + w_{2ist} \cdot 1 + w_{2ein} \cdot 1 + w_{2erstes} \cdot 1 + w_{2Beispiel} \cdot 1 \approx -0,98 \nonumber
+\end{equation}
+Da $w_{t_{1}y_{1}} < w_{t_{1}y_{2}}$ würde Dokument $d_1$ korrekterweise der Klasse $y_1$ zugewiesen.
+
+%\section{Verwendete Metriken}
+
+%In diesem Kapitel werden die verwendeten Metriken beschrieben.
+
+%\subsection{Term Frequency}
+
+%Zum Berechnen der \textit{Term Frequency} wurde die logarithmische Häufigkeitsberechnung gewählt. Diese wird mit 
+%\begin{equation}
+%d_{ij} = 1 + log(d_{ij})
+%\end{equation}
+%berechnet.
+
+%\subsection{Inverse Document Frequency}
+
+%Die \textit{Inverse Document Frequency} wird mithlife der geglätteten %Variante
+%\begin{equation}
+%log(1 + \frac{sum_k 1}{sum_{i\in d}})
+%\end{equation}
+%gewählt.
+
+\newpage
+\section{Auswahl der Klassen}
+
+Da eine vollständige Abdeckung der häufigsten Kategorien von Nachrichtenartikeln sehr umfangreich ist, werden in dieser Arbeit nur einige ausgewählte Kategorien betrachtet.
+Die Auswahl ist folgende:
+\begin{itemize}
+	\item Rechtsextremismus
+	\item Rechtspopulismus
+	\item Islamismus
+	\item Terrorismus
+	\item Flüchtlingskrise
+	\item Gewalt
+	\item Kriminalität
+\end{itemize}
+
+Diese Auswahl wurde vorallem aufgrund der gesellschaftlichen Brisanz und Aktualität getroffen. Die Flüchtlingskrise ist politisch sehr bestimmend und sorgt für Entscheidungen, die in den Medien teilweise stark kritisiert werden. Gleichzeitig ist ein weltweites Erstarken rechtspopulistischer Positionen in politischen Diskussionen und Wahlen zu sehen, sowie das Ansteigen politisch motivierter Straftaten. Dies steht auch im Zusammenhang mit dem auch in Deutschland bestehenden Bedrohungen durch potenzielle Terroranschläge durch radikal Islamistische Gruppierungen, weshalb dies ebenso als zubetrachtete Kategorie hinzugefügt wurde.\\
+
+Die Auswahl der Nachrichtenportale wurde auf \textit{Spiegel-Online}\footnote{http://www.spiegel.de} und die \textit{Sueddeutsche-Online}\footnote{http://www.sueddeutsche.de} beschränkt.\\
+
+Um eine Datengrundlage zu schaffen, ist es nötig eine möglichst große Anzahl an Nachrichtenartikeln zu lesen und zu klassifizieren. Da die Beschränkung auf zwei Nachrichtenportale und sieben Kategorien vorgenommen wurde ist die Erhebung der nötigen Artikel einfacher.
+Damit der Klassifikationsalgorithmus ausreichend gut funktioniert, werden mindestens 50 Artikel zusammengesucht, gelesen und entsprechend klassifiziert. Die gesammelten Artikel werden in einer Tabelle mit den Angaben \textit{Schlagzeile}, \textit{Datum}, \textit{Link} und \textit{Kategorien} gespeichert. 
+
+
+
+
+
+

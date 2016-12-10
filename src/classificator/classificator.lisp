@@ -40,8 +40,8 @@
 (defun term-frequency (document word) ;wie oft kommt das wort in der klasse vor?
 	(let ((wcount (second (assoc word (get document 'INDEXER:WORD-LIST) :test 'string-equal))))
 	;(+ 0.5 (* 0.5 (/ wcount (get-max-wcount-of-class classId))))))
-	(if (not wcount) (setf wcount 0))
-	(log (+ 1 wcount))))
+	(if (not wcount) (setf wcount 1))
+	(+ 1 (log wcount))))
 
 
 (defun inverse-document-frequency (word );(&key (ignore nil))) ;inverse häufigkeit des wortes in allen klassen, damit werden beispielsweise artikel relativ unbedeutend

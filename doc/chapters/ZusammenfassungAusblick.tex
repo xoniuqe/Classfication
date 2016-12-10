@@ -1,3 +1,25 @@
-\chapter{Zusammenfassung und Ausblick}
+\chapter{Zusammenfassung}
 
-In diesem Kapitel soll die Arbeit noch einmal kurz zusammengefasst werden. Insbesondere sollen die wesentlichen Ergebnisse Ihrer Arbeit herausgehoben werden. Erfahrungen, die z.B. Benutzer mit der Mensch-Maschine-Schnittstelle gemacht haben oder Ergebnisse von Leistungsmessungen sollen an dieser Stelle präsentiert werden. Sie können in diesem Kapitel auch die Ergebnisse oder das Arbeitsumfeld Ihrer Arbeit kritisch bewerten. Wünschenswerte Erweiterungen sollen als Hinweise auf weiterführende Arbeiten erwähnt werden.
+%In diesem Kapitel soll die Arbeit noch einmal kurz zusammengefasst werden. Insbesondere sollen die wesentlichen Ergebnisse Ihrer Arbeit herausgehoben werden. Erfahrungen, die z.B. Benutzer mit der Mensch-Maschine-Schnittstelle gemacht haben oder Ergebnisse von Leistungsmessungen sollen an dieser Stelle präsentiert werden. Sie können in diesem Kapitel auch die Ergebnisse oder das Arbeitsumfeld Ihrer Arbeit kritisch bewerten. Wünschenswerte Erweiterungen sollen als Hinweise auf weiterführende Arbeiten erwähnt werden.
+
+Das in dieser Arbeit erstellte Programm ermöglicht es, erfolgreich Artikel in passende Kategorien einzuordnen und somit eine gute Filterung von Nachrichtenartikel zu erzielen.
+Problematisch ist diese Kategorisierung allerdings bezüglich der Auswahl der Trainingsdaten. So ist zum einen eine sehr große Menge an Artikeln notwendig um eine genaue Klassifikation zu ermöglichen, doch ist dies auch mit einem großen Aufwand verbunden. Die in dieser Arbeit erstellten Trainingsdaten sind nicht Umfangreich genug um eine wirklich zufriedenstellende Kategorisierung zu ermöglichen, zeigen aber auch das Potenzial des Algorithmus.\\
+
+Insgesamt lässt sich diese Arbeit als Erfolg werten. Die zugrunde liegenden Algorithmen sind voll funktionsfähig und die Aufteilung der Programmpakete ermöglicht eine einfache Wartung und Erweiterung.
+Der intensive Kontakt mit verschiedenen Verfahren zur Textklassifikation und anderen Data-Mining Algorithmen hat bei mir die Absicht geweckt sich noch weiter mit diesem Themengebiet zu beschäftigen und die genannten Verbesserungen des Programms in Zukunft zu realisieren.
+
+%ausführlicher?
+
+\newpage
+\chapter{Ausblick}
+
+Die erstellte Anwendung hat viel Potenzial für Verbesserungen, so wird beispielsweise der erstellte Klassifikationskorpus nicht gespeichert und muss bei jedem Programmstart neu erstellt werden, was mit einer mehrminütigen Wartezeit verbunden ist.
+Desweiteren ist die Abdeckung von nur zwei Nachrichtenportalen nicht optimal, kann aber durch die hier entworfene Bezeichnungssprache relativ einfach erweitert werden.\\
+Eine weitere mögliche Verbesserung wäre es, die schon durchsuchten Artikel abzuspeichern und somit eine Möglichkeit zur Archivierung und langfristigen Verbesserung der Trainingsdaten zu ermöglichen. Die Suche könnte ebenso ausgeweitet werden, da sie sich zurzeit nur auf die auf der ersten Seite einer angegebenen Nachrichtenseite bezieht und ältere Artikel nicht durchsucht. Dies greift mit der erwähnten Archivierung zusammen, da so schon klassifizierte Artikel nicht erneut geprüft werden müssten.\\
+
+Denkbar wäre auch eine Erweiterung die es ermöglicht auch andere Quellen zu klassifizieren, beispielsweise eingescannte Dokumente oder Magazine die mithilfe einer Texterkennungssoftware vorverarbeitet werden. So würde das Programm nicht nur von Online-Medien abhängig sein und würde Optionen bieten ein umfassendes Archiv aufzubauen.
+Hierfür könnte eine erweiterte Hierarchie sinnvoll sein, die es erlaubt auch Ober- beziehungsweise Unterkategorien zu definieren, mit denen die Kategorisierung und Suche verfeinert werden könnte.\\
+
+Da der Klassifikationsalgorithmus mit einem simplen \textit{Bag-of-Words}-Modell arbeitet, der lediglich einzelne Wörter verwendet, könnte auch über eine mögliche Verwendung von \textit{N-Grammen} nachgedacht werden. Dies bedeutet statt jeweils ein Wort zu zählen, \textit{N} Wörter zu zählen und dann zu klassifizieren. Es könnte ausgewertet werden ob dies eine Verbesserung erbringt oder nicht. 
+Insgesamt können basierend auf dieser Arbeit viele solcher Optionen berücksichtigt werden. Die verwendeten Metriken können mit der im Kapitel \ref{chap-ext-bayes} beschriebenen Optionen ausgetauscht werden und dann mithilfe von weiteren Testdaten die für Nachrichtenartikel beste Methode zu evaluieren.
+

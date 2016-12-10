@@ -64,12 +64,12 @@
 		:columns '((:title "Property"  :width 75) (:title "Value" :width 525)))
 		;:column-function (lambda (data) ))
 )
-(:menus 
-	(file-menu "File"
-                (("Open"))
-                :selection-callback 'file-choice))
+;(:menus 
+;	(file-menu "File"
+ ;               (("Open"))
+  ;              :selection-callback 'file-choice))
 				
-(:menu-bar file-menu)
+;(:menu-bar file-menu)
 (:layouts
  (main-layout capi:tab-layout () :items '(("Suche" search-tab)("Daten" data-tab)) :print-function 'car :visible-child-function 'second)
  (search-tab capi:column-layout '(;row-of-buttons 
