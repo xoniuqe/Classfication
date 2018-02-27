@@ -6,4 +6,4 @@
   :maintainer "Tobias Arens"
   :author "Tobias Arens <arenst@hochschule-trier.de"
   :description ""
-  :components ((:file "src/test")))
+ ); :components ((:file "src/test")))

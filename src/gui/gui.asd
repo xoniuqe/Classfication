@@ -4,7 +4,7 @@
   :description "Describe document gui here"
   :author "Tobias Arens "
   :license "Specify license here"
-  :depends-on (
+  :depends-on ( #:cl-cffi-gtk
 				#:trivial-open-browser)
              
   :serial t

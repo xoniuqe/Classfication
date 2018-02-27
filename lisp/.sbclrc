@@ -1,0 +1,7 @@
+(require 'asdf)
+
+(pushnew #p"/usr/share/common-lisp/systems/" asdf:*central-registry* :test #'equal)
+(push #p"/usr/share/common-lisp/systems/" asdf:*central-registry*)
+
+(pushnew #P"/home/pathfinder/lisp/systems/" asdf:*central-registry* :test #'equal)
+(push #P"/home/pathfinder/lisp/systems/" asdf:*central-registry*)
